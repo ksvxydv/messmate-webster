@@ -1,36 +1,37 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🛡️ MessMate — The Kamar-Taj Refectory Engine
+**Webster 2026 Submission | CodeSangam, MNNIT Allahabad**[span_8](start_span)[span_8](end_span)
+**Track:** E2 — Resource Engine & Atomic Meal Check-In[span_9](start_span)[span_9](end_span)
 
-## Getting Started
+---
 
-First, run the development server:
+## 🌟 Executive Overview
+**MessMate** is a full-stack predictive hostel mess management platform and atomic meal check-in engine engineered to solve two core institutional inefficiencies:
+1. **Unpredictable Daily Head-Counts:** Eliminating massive food wastage through a server-authoritative cutoff state machine that locks meal preferences before preparation begins[span_10](start_span)[span_10](end_span).
+2. **Proxy Attendance & Double-Dipping:** Stopping screenshot sharing and token forgery via 30-second rotating `HMAC-SHA256` QR passes and PostgreSQL atomic row-locking[span_11](start_span)[span_11](end_span).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🏗️ System Architecture & Data Flow
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## ⚙️ Core Engineering Design
 
-## Learn More
+### 1. The Cutoff State Machine Logic
+Meals progress through a strict deterministic state flow:
+$$\text{OPTED\_IN} / \text{OPTED\_OUT} \longrightarrow \text{LOCKED (at cutoff)} \longrightarrow \text{CONSUMED (on scan)}$$
+* **Server-Authoritative Validation:** All cutoff checks evaluate against PostgreSQL server time (`NOW()`), rendering client device clock tampering completely ineffective[span_4](start_span)[span_4](end_span).
 
-To learn more about Next.js, take a look at the following resources:
+### 2. Cryptographic Rotating QR Pass (HMAC-SHA256)
+* To prevent students from sharing static screenshots of QR codes, passes encode a compact payload:
+  $$\text{Payload} = \{\text{userId}, \text{mealSlotId}, \text{timeWindow (30s)}, \text{HMAC-SHA256}(\text{SECRET\_KEY}, \text{data})\}$$
+* Tokens expire automatically after 30 seconds and are verified locally or at the edge before hitting heavy database writes[span_5](start_span)[span_5](end_span).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 3. Anti-Double-Spend Atomic Compare-and-Swap (CAS)
+* **The Naive Way:** Separating reads and writes (`SELECT` then `UPDATE`) creates a Time-of-Check to Time-of-Use (TOCTOU) race condition under heavy parallel scanning, allowing duplicate redemptions[span_6](start_span)[span_6](end_span).
+* **Our Smart Way:** We combine state validation and redemption into a single atomic PostgreSQL statement:
+  ```sql
+  UPDATE meal_bookings
+  SET status = 'CONSUMED', scanned_at = NOW()
+  WHERE id = $bookingId AND status = 'LOCKED'
+  RETURNING id;
