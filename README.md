@@ -179,7 +179,7 @@ Create a `.env.local` file in the root directory:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=[https://gacxmkewwyuoqeyaxzmr.supabase.co](https://gacxmkewwyuoqeyaxzmr.supabase.co)
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_dlOK7ncQgNBiuS8sV2Fp9Q_zfRb6F0
-NEXT_PUBLIC_HMAC_SECRET=sb_secret_Mt10MXLdZxtneO2AExQV9A_eGAAve_
+NEXT_PUBLIC_HMAC_SECRET=MNNIT_WEBSTER_2026
 ```
 
 ### Step 3: Initialize Database Schema & Seed Data
