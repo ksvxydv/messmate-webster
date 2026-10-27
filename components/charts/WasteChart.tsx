@@ -10,6 +10,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { THEME } from "@/lib/theme";
 
 interface WasteChartProps {
   data: any[];
@@ -17,51 +18,63 @@ interface WasteChartProps {
 
 export default function WasteChart({ data }: WasteChartProps) {
   return (
-    <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col transition-colors">
-      <h2 className="text-base font-bold text-gray-800 dark:text-white mb-1">
-        Food Waste Analytics (Projected vs. Consumed)
-      </h2>
-      <p className="text-xs text-gray-400 dark:text-gray-400 mb-4">
-        Visual comparison of locked meal commitments against verified QR
-        redemptions
-      </p>
-      <div className="w-full h-64 mt-auto">
+    <div className={`${THEME.card} p-6 sm:p-7 flex flex-col justify-between space-y-4`}>
+      <div>
+        <h3 className="text-base font-black text-[#252820]">
+          Attendance Telemetry &amp; Utilization
+        </h3>
+        <p className="text-xs sm:text-sm text-[#777064] mt-0.5">
+          Comparison of kitchen cook projections, verified counter redemptions, and pre-cutoff saved portions
+        </p>
+      </div>
+
+      <div className="w-full h-64 mt-2">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#E5E1D8" />
             <XAxis
               dataKey="name"
-              stroke="#9ca3af"
-              tick={{ fontSize: 12, fill: "#9ca3af" }}
+              stroke="#777064"
+              tick={{ fontSize: 12, fill: "#252820", fontWeight: "bold" }}
             />
             <YAxis
               allowDecimals={false}
-              stroke="#9ca3af"
-              tick={{ fontSize: 12, fill: "#9ca3af" }}
+              stroke="#777064"
+              tick={{ fontSize: 12, fill: "#777064" }}
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: "#111827",
-                borderColor: "#1f2937",
-                color: "#f9fafb",
+                backgroundColor: "#FFFFFF",
+                borderColor: "#E5E1D8",
+                color: "#252820",
                 borderRadius: "0.75rem",
-                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-              }}
-              labelStyle={{
-                color: "#f9fafb",
-                fontWeight: "bold",
-                marginBottom: "4px",
-              }}
-              itemStyle={{
-                color: "#d1d5db",
+                boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.08)",
                 fontSize: "12px",
-                padding: "2px 0",
               }}
+              labelStyle={{ color: "#252820", fontWeight: "bold", marginBottom: "4px" }}
+              formatter={(value: any, name: any) => [`${value} portions`, name]}
             />
-            <Legend wrapperStyle={{ paddingTop: "10px", fontSize: "12px" }} />
-            <Bar dataKey="Projected" fill="#3b82f6" radius={[6, 6, 0, 0]} />
-            <Bar dataKey="Consumed" fill="#10b981" radius={[6, 6, 0, 0]} />
-            <Bar dataKey="OptedOut" fill="#f59e0b" radius={[6, 6, 0, 0]} />
+            <Legend
+              wrapperStyle={{ paddingTop: "12px", fontSize: "12px", fontWeight: "bold" }}
+            />
+            <Bar
+              dataKey="Projected"
+              fill="#244C3B"
+              radius={[4, 4, 0, 0]}
+              name="Projected (Cook For)"
+            />
+            <Bar
+              dataKey="Consumed"
+              fill="#15803D"
+              radius={[4, 4, 0, 0]}
+              name="Consumed (Checked In)"
+            />
+            <Bar
+              dataKey="OptedOut"
+              fill="#D99A51"
+              radius={[4, 4, 0, 0]}
+              name="Pre-Cutoff Skipped"
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>

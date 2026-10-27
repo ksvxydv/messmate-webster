@@ -2,40 +2,45 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Utensils, User, Camera, BarChart3, ShieldCheck } from "lucide-react";
+import {
+  LayoutDashboard,
+  CalendarDays,
+  ScanLine,
+  ChartNoAxesCombined,
+  Check,
+} from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import Logo from "@/components/ui/Logo";
+import DevTimeController from "@/components/ui/DevTimeController";
 
 export default function Navbar() {
   const pathname = usePathname();
   const { role, setRole } = useAuth();
 
   const navItems = [
-    { name: "Overview", href: "/", icon: Utensils },
-    { name: "Student Portal", href: "/student", icon: User },
-    { name: "Staff QR Scanner", href: "/staff", icon: Camera },
-    { name: "Admin Analytics", href: "/admin", icon: BarChart3 },
+    { name: "Overview", shortName: "Overview", href: "/", icon: LayoutDashboard },
+    { name: "Student Dining", shortName: "Dining", href: "/student", icon: CalendarDays },
+    { name: "Staff Scanner", shortName: "Scanner", href: "/staff", icon: ScanLine },
+    { name: "Kitchen Admin", shortName: "Admin", href: "/admin", icon: ChartNoAxesCombined },
   ];
 
   return (
-    <header className="sticky top-0 z-40 bg-gray-950/90 backdrop-blur-md border-b border-gray-800 font-sans transition-colors">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-pink-600 flex items-center justify-center text-white shadow-sm">
-            <Utensils className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="font-bold text-white text-base tracking-tight">
-              MessMate
-            </span>
-            <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-[10px] font-bold uppercase bg-pink-950/50 text-pink-400 rounded-full border border-pink-900">
-              E2: Kamar-Taj
-            </span>
-          </div>
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#E5E1D8] font-sans shadow-xs">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
+        {/* Brand Logo & Wordmark */}
+        <Link
+          href="/"
+          className="flex items-center group cursor-pointer shrink-0"
+          aria-label="MessMate Home"
+        >
+          <Logo variant="full" size="md" />
         </Link>
 
-        {/* Role Switcher Links */}
-        <nav className="flex items-center gap-1 sm:gap-2">
+        {/* Portal Navigation Links (Desktop: md to 2xl) */}
+        <nav
+          className="hidden md:flex items-center gap-1 lg:gap-1.5"
+          aria-label="Primary Navigation"
+        >
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
@@ -43,45 +48,75 @@ export default function Navbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                className={`whitespace-nowrap px-2.5 lg:px-3 py-1.5 rounded-xl text-xs lg:text-sm font-semibold flex items-center gap-1.5 lg:gap-2 transition-all duration-150 ${
                   isActive
-                    ? "bg-gray-800 text-pink-400 shadow-sm"
-                    : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                    ? "bg-[#244C3B] text-white shadow-xs"
+                    : "text-[#252820]/75 hover:bg-[#FAF7F0] hover:text-[#252820]"
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
-                <span className="hidden md:inline">{item.name}</span>
+                <Icon className="w-3.5 h-3.5 lg:w-4 lg:h-4 stroke-[2] shrink-0" />
+                {/* Responsive Label: short on tablet (md), full on desktop (lg+) */}
+                <span className="inline lg:hidden">{item.shortName}</span>
+                <span className="hidden lg:inline">{item.name}</span>
               </Link>
             );
           })}
         </nav>
 
-        {/* Right Actions: Active Role Selector + Security Badge */}
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center bg-gray-900 p-1 rounded-xl border border-gray-800">
-            <span className="text-[10px] text-gray-400 px-2 hidden sm:inline">
-              Role:
+        {/* Right Section: Time Simulation & Demo Persona Controls */}
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          <DevTimeController />
+
+          {/* Development / Demo Persona Switcher */}
+          <div
+            className="flex items-center bg-[#FAF7F0] p-1 rounded-xl border border-[#E5E1D8]"
+            role="group"
+            aria-label="Development Demo Persona Switcher"
+          >
+            <span className="text-xs text-[#777064] px-1.5 hidden xl:inline font-bold">
+              Demo:
             </span>
-            {["STUDENT", "STAFF", "ADMIN"].map((r) => (
+            {(["STUDENT", "STAFF", "ADMIN"] as const).map((r) => (
               <button
                 key={r}
+                type="button"
                 onClick={() => setRole(r)}
-                className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                aria-pressed={role === r}
+                title={`Switch demo role to ${r}`}
+                className={`px-2 lg:px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                   role === r
-                    ? "bg-pink-600 text-white shadow-sm"
-                    : "text-gray-400 hover:text-white"
+                    ? "bg-[#244C3B] text-white shadow-xs"
+                    : "text-[#777064] hover:text-[#252820] hover:bg-white"
                 }`}
               >
-                {r}
+                {role === r && <Check className="w-3 h-3 stroke-[2.5]" />}
+                <span>{r === "STUDENT" ? "Student" : r === "STAFF" ? "Staff" : "Admin"}</span>
               </button>
             ))}
           </div>
-
-          <div className="hidden xl:flex items-center gap-1.5 text-xs font-medium text-emerald-400 bg-emerald-950/40 px-3 py-1.5 rounded-full border border-emerald-900">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>HMAC-SHA256</span>
-          </div>
         </div>
+      </div>
+
+      {/* Mobile Sub-Navigation Bar (below md breakpoint) */}
+      <div className="md:hidden border-t border-[#E5E1D8] bg-[#FAF7F0]/95 px-3 py-1.5 flex items-center justify-around">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all min-h-[38px] ${
+                isActive
+                  ? "bg-[#244C3B] text-white shadow-xs"
+                  : "text-[#777064] hover:text-[#252820] hover:bg-white"
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5 stroke-[2]" />
+              <span>{item.shortName}</span>
+            </Link>
+          );
+        })}
       </div>
     </header>
   );

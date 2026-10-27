@@ -1,410 +1,350 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
-import { generateQRToken } from "@/lib/crypto";
+import { THEME } from "@/lib/theme";
+import { getMealTimingDetails } from "@/lib/meal-times";
+import { calculateRebates, DEFAULT_BASE_MONTHLY_FEE } from "@/lib/rebates";
+import AppShell from "@/components/layout/AppShell";
+import RoleGuard from "@/components/ui/RoleGuard";
 import RebateCard from "@/components/ui/RebateCard";
 import QRPassModal from "@/components/ui/QRPassModal";
+import StudentHeader from "@/components/student/StudentHeader";
+import StudentPersonaSwitcher from "@/components/student/StudentPersonaSwitcher";
+import MealCard from "@/components/student/MealCard";
 import {
-  Utensils,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  User,
-  QrCode,
-  Users,
-  Lock,
-  ShieldAlert,
+  UtensilsCrossed,
+  AlertCircle,
+  RefreshCw,
+  ChefHat,
+  Sparkles,
 } from "lucide-react";
+import { UserProfile, StudentMealView, DietaryPref } from "@/types";
 
 export default function StudentDashboard() {
-  const { role, loading: authLoading } = useAuth();
-  const [allStudents, setAllStudents] = useState<any[]>([]);
-  const [student, setStudent] = useState<any>(null);
-  const [meals, setMeals] = useState<any[]>([]);
+  const { role, loading: authLoading, currentUser, setCurrentUser, availableUsers } = useAuth();
+  const [student, setStudent] = useState<UserProfile | null>(null);
+  const [meals, setMeals] = useState<StudentMealView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [now, setNow] = useState<Date>(new Date(0));
+  const [serverTimeOffset, setServerTimeOffset] = useState<number>(0);
+  const [now, setNow] = useState<Date>(new Date());
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // QR Modal state
-  const [activeQRMeal, setActiveQRMeal] = useState<any>(null);
+  const [activeQRMeal, setActiveQRMeal] = useState<StudentMealView | null>(null);
   const [qrTokenString, setQrTokenString] = useState("");
   const [qrCountdown, setQrCountdown] = useState(30);
 
-  // Live 1-second ticker for cutoff countdowns and 30s QR rotation
+  // Server-synced ticker for cutoffs and 30s QR rotation
   useEffect(() => {
-    setNow(new Date());
     const timer = setInterval(() => {
-      const current = new Date();
-      setNow(current);
-      const secondsInWindow = 30 - (Math.floor(current.getTime() / 1000) % 30);
-      setQrCountdown(secondsInWindow);
+      const adjusted = new Date(Date.now() + serverTimeOffset);
+      setNow(adjusted);
+      setQrCountdown(30 - (Math.floor(adjusted.getTime() / 1000) % 30));
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [serverTimeOffset]);
 
+  // Keep student aligned with currentUser
   useEffect(() => {
-    async function initStudents() {
-      const { data: studentsList } = await supabase
-        .from("users")
-        .select("*")
-        .eq("role", "STUDENT")
-        .order("reg_no", { ascending: true });
-
-      if (studentsList && studentsList.length > 0) {
-        setAllStudents(studentsList);
-        setStudent(studentsList[0]);
-      } else {
-        setLoading(false);
-      }
+    if (currentUser?.role === "STUDENT") {
+      setStudent(currentUser);
+    } else {
+      const firstStudent = availableUsers.find((u) => u.role === "STUDENT");
+      if (firstStudent) setStudent(firstStudent);
     }
-    initStudents();
-  }, []);
+  }, [currentUser, availableUsers]);
 
-  useEffect(() => {
-    async function loadMealsForStudent() {
-      if (!student) return;
-      setLoading(true);
-
-      const { data: slots } = await supabase
-        .from("meal_slots")
-        .select("*")
-        .order("cutoff_time", { ascending: true });
+  // Load daily meal schedule & server timestamp
+  const loadMealsForStudent = useCallback(async () => {
+    if (!student) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/meals");
+      const data = await res.json();
+      if (data.serverTime) {
+        setServerTimeOffset(new Date(data.serverTime).getTime() - Date.now());
+      }
 
       const { data: bookings } = await supabase
         .from("meal_bookings")
         .select("*")
         .eq("user_id", student.id);
 
-      if (slots) {
-        const formatted = slots.map((slot: any) => {
-          const booking = (bookings || []).find(
-            (b: any) => b.meal_slot_id === slot.id,
-          );
-          return {
-            ...slot,
-            bookingStatus: booking ? booking.status : "OPTED_IN",
-            bookingId: booking ? booking.id : null,
-            scannedAt: booking ? booking.scanned_at : null,
-          };
-        });
-        setMeals(formatted);
-      }
+      const formatted: StudentMealView[] = (data.slots || []).map((slot: any) => {
+        const booking =
+          (bookings || []).find((b: any) => b.meal_slot_id === slot.id) ||
+          (slot.meal_bookings || []).find((b: any) => b.user_id === student.id);
+        return {
+          ...slot,
+          bookingStatus: booking ? booking.status : "OPTED_IN",
+          bookingId: booking ? booking.id : null,
+          scannedAt: booking ? booking.scanned_at : null,
+        };
+      });
+      setMeals(formatted);
+    } catch (e: any) {
+      console.error("Meals load error:", e);
+    } finally {
       setLoading(false);
     }
-    loadMealsForStudent();
-  }, [student?.id]);
+  }, [student]);
 
   useEffect(() => {
-    async function updateQR() {
-      if (activeQRMeal && student) {
-        const token = await generateQRToken(student.id, activeQRMeal.id);
-        setQrTokenString(token);
+    loadMealsForStudent();
+    const onTimeChange = () => loadMealsForStudent();
+    window.addEventListener("messmate:time-changed", onTimeChange);
+    return () => window.removeEventListener("messmate:time-changed", onTimeChange);
+  }, [loadMealsForStudent]);
+
+  // Regenerate rotating QR token on 30s bucket boundary via server-only cryptographic endpoint
+  const currentWindowBucket = Math.floor(now.getTime() / 30000);
+  useEffect(() => {
+    let cancelled = false;
+    if (activeQRMeal && student) {
+      fetch(
+        `/api/qr/token?userId=${encodeURIComponent(student.id)}&mealSlotId=${encodeURIComponent(activeQRMeal.id)}`,
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          if (!cancelled && data.qrToken) {
+            setQrTokenString(data.qrToken);
+          }
+        })
+        .catch((err) => console.error("QR token retrieval error:", err));
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [activeQRMeal, student, currentWindowBucket]);
+
+  // Toggle meal preference via server-authoritative API
+  const handleToggle = async (mealSlotId: string, currentStatus: string) => {
+    if (!student) return;
+    const requestedStatus = currentStatus === "OPTED_IN" ? "OPTED_OUT" : "OPTED_IN";
+    setErrorMessage(null);
+    setMeals((prev) =>
+      prev.map((m) => (m.id === mealSlotId ? { ...m, bookingStatus: requestedStatus } : m)),
+    );
+
+    try {
+      const res = await fetch("/api/meals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: student.id, mealSlotId, requestedStatus }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        setErrorMessage(err.error || "Preparation deadline has elapsed. Attendance is locked.");
+        loadMealsForStudent();
+      }
+    } catch {
+      setErrorMessage("Network issue. Reverting status.");
+      loadMealsForStudent();
+    }
+  };
+
+  // Track in-flight dietary preference request to prevent race conditions
+  const lastPrefRequestIdRef = useRef<number>(0);
+
+  const handleDietaryChange = async (newPref: DietaryPref) => {
+    if (!student) return;
+    const requestId = ++lastPrefRequestIdRef.current;
+    const prevStudent = student;
+    const updated = { ...student, dietary_pref: newPref };
+
+    // 1. Immediate optimistic UI update
+    setStudent(updated);
+    setCurrentUser(updated);
+    setErrorMessage(null);
+
+    // 2. Persist to per-student localStorage for demo resilience
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`messmate_pref_${student.id}`, newPref);
+    }
+
+    // 3. Persist to Supabase with error handling and race-condition guard
+    try {
+      const { error } = await supabase
+        .from("users")
+        .update({ dietary_pref: newPref })
+        .eq("id", student.id);
+
+      if (error && requestId === lastPrefRequestIdRef.current) {
+        console.error("Failed to update dietary preference:", error.message);
+        setErrorMessage(`Preference update failed (${error.message}). Reverting.`);
+        setStudent(prevStudent);
+        setCurrentUser(prevStudent);
+      }
+    } catch (err: any) {
+      if (requestId === lastPrefRequestIdRef.current) {
+        console.error("Network error while updating dietary preference:", err);
+        setErrorMessage("Network error while updating preference. Reverting.");
+        setStudent(prevStudent);
+        setCurrentUser(prevStudent);
       }
     }
-    if (activeQRMeal) {
-      updateQR();
-    }
-  }, [activeQRMeal, student, Math.floor(now.getTime() / 30000)]);
-
-  const handleToggle = async (mealSlotId: string, currentStatus: string) => {
-    const newStatus = currentStatus === "OPTED_IN" ? "OPTED_OUT" : "OPTED_IN";
-    setMeals(
-      meals.map((m) =>
-        m.id === mealSlotId ? { ...m, bookingStatus: newStatus } : m,
-      ),
-    );
-
-    await supabase
-      .from("meal_bookings")
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
-      .eq("user_id", student.id)
-      .eq("meal_slot_id", mealSlotId);
   };
 
-  const handleSimulateLockToggle = async (meal: any) => {
-    const nextStatus = meal.bookingStatus === "LOCKED" ? "OPTED_IN" : "LOCKED";
-    setMeals(
-      meals.map((m) =>
-        m.id === meal.id ? { ...m, bookingStatus: nextStatus } : m,
-      ),
-    );
-    await supabase
-      .from("meal_bookings")
-      .update({ status: nextStatus, updated_at: new Date().toISOString() })
-      .eq("user_id", student.id)
-      .eq("meal_slot_id", meal.id);
-  };
+  const studentProfiles = useMemo(
+    () => availableUsers.filter((u) => u.role === "STUDENT"),
+    [availableUsers],
+  );
 
-  const handleDietaryChange = async (pref: string) => {
-    if (!student) return;
-    const updatedStudent = { ...student, dietary_pref: pref };
-    setStudent(updatedStudent);
-    setAllStudents(
-      allStudents.map((s) => (s.id === student.id ? updatedStudent : s)),
-    );
-    await supabase
-      .from("users")
-      .update({ dietary_pref: pref })
-      .eq("id", student.id);
-  };
-
-  const getCountdownText = (cutoffTime: string) => {
-    if (now.getTime() === 0) return "Syncing clock...";
-    const diff = new Date(cutoffTime).getTime() - now.getTime();
-    if (diff <= 0) return "Cutoff Passed";
-    const hrs = Math.floor(diff / (1000 * 60 * 60));
-    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    const secs = Math.floor((diff % (1000 * 60)) / 1000);
-    return `${hrs}h ${mins}m ${secs}s left`;
-  };
-
-  if (authLoading || (loading && !student))
+  if (authLoading || (loading && !student)) {
     return (
-      <div className="p-8 text-center font-sans text-gray-400">
-        Loading MessMate Student Portal...
+      <div className="p-16 text-center text-[#777064] font-medium text-sm">
+        Loading Hostel Dining Portal...
       </div>
-    );
-
-  // RBAC Guard: Restrict Student Portal strictly to STUDENT role
-  if (role !== "STUDENT") {
-    return (
-      <main className="min-h-screen bg-[#030712] p-8 flex items-center justify-center">
-        <div className="bg-[#111827] border border-red-900/50 p-8 rounded-2xl max-w-md text-center space-y-4 shadow-xl">
-          <div className="w-12 h-12 rounded-full bg-red-950/80 text-red-400 flex items-center justify-center mx-auto border border-red-800">
-            <ShieldAlert className="w-6 h-6" />
-          </div>
-          <h2 className="text-xl font-bold text-white">
-            Restricted Access Portal
-          </h2>
-          <p className="text-xs text-gray-400 leading-relaxed">
-            This Dining Sanctum Portal is strictly secured for{" "}
-            <span className="text-red-400 font-semibold">
-              Hostel Residents (STUDENT)
-            </span>
-            . Please switch your active role to STUDENT in the top navigation
-            bar.
-          </p>
-          <a
-            href="/"
-            className="inline-block px-5 py-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-xl text-xs font-semibold transition-all border border-gray-700"
-          >
-            Return to Overview Hub
-          </a>
-        </div>
-      </main>
     );
   }
 
+  if (role !== "STUDENT") {
+    return <RoleGuard requiredRole="STUDENT" />;
+  }
+
   const optedOutMeals = meals.filter((m) => m.bookingStatus === "OPTED_OUT");
-  const totalRebate = optedOutMeals.reduce(
-    (sum, m) => sum + Number(m.unit_cost || 50),
-    0,
+  const rebateCalc = calculateRebates(
+    DEFAULT_BASE_MONTHLY_FEE,
+    optedOutMeals.map((m) => ({ unitCost: m.unit_cost }))
   );
 
-  return (
-    <main className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6 font-sans relative transition-colors">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Student Switcher */}
-        {allStudents.length > 1 && (
-          <div className="bg-white dark:bg-gray-900 rounded-2xl p-3.5 px-5 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-gray-400">
-              <Users className="w-4 h-4 text-pink-600 dark:text-pink-400" />
-              <span>Switch Active Student Profile (Demo):</span>
-            </div>
-            <div className="flex items-center gap-2">
-              {allStudents.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => setStudent(s)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                    student?.id === s.id
-                      ? "bg-pink-600 text-white shadow-sm"
-                      : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
-                  }`}
-                >
-                  {s.name} ({s.reg_no})
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+  // Identify currently serving meal
+  const currentServingMeal = meals.find((m) => {
+    const t = getMealTimingDetails(m.meal_type, m.meal_date, now);
+    return t.isServingNow;
+  });
 
-        {/* Header */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
+  return (
+    <AppShell
+      badge="Hostel Dining"
+      title="Hostel Mess Dining Portal"
+      description="Daily meal schedule, attendance management, pre-cutoff rebates & dining entry passes"
+      actions={
+        <StudentHeader
+          student={student}
+          onDietaryChange={handleDietaryChange}
+        />
+      }
+    >
+      {/* Live Mess Service Status Banner */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E5E1D8] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-[#244C3B]/10 border border-[#244C3B]/20 text-[#244C3B] flex items-center justify-center shrink-0">
+            <ChefHat className="w-6 h-6" />
+          </div>
           <div>
-            <span className="px-3 py-1 bg-pink-50 dark:bg-pink-950/50 text-pink-600 dark:text-pink-400 font-bold text-xs rounded-full uppercase tracking-wide border border-pink-100 dark:border-pink-900">
-              Student Dining Dashboard
-            </span>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white mt-2">
-              MessMate Student Portal
-            </h1>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">
-              Manage your daily hostel meal schedules, QR passes & monthly
-              rebates
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-black text-[#252820]">
+                MNNIT Central Dining Hall
+              </span>
+              {currentServingMeal ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 animate-pulse">
+                  <span className="w-2 h-2 rounded-full bg-emerald-600" />
+                  {currentServingMeal.meal_type} Serving Now
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#FAF7F0] text-[#777064] border border-[#E5E1D8]">
+                  Kitchen Prep in Progress
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-[#777064] mt-0.5">
+              Hostel Mess 1 (SVBH / Tilak Hall) • Hot nutritious meals prepared daily.
             </p>
           </div>
-
-          {student && (
-            <div className="flex flex-col items-end gap-2">
-              <div className="flex items-center gap-3 bg-pink-50 dark:bg-pink-950/50 px-4 py-2 rounded-xl border border-pink-100 dark:border-pink-900">
-                <User className="w-5 h-5 text-pink-600 dark:text-pink-400" />
-                <div>
-                  <p className="text-sm font-semibold text-gray-800 dark:text-white">
-                    {student.name}
-                  </p>
-                  <p className="text-xs text-pink-600 dark:text-pink-400 font-medium">
-                    Reg: {student.reg_no} | {student.dietary_pref}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl border border-gray-200 dark:border-gray-700">
-                {["VEG", "NON_VEG", "JAIN"].map((pref) => (
-                  <button
-                    key={pref}
-                    onClick={() => handleDietaryChange(pref)}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
-                      student.dietary_pref === pref
-                        ? "bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-sm"
-                        : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white"
-                    }`}
-                  >
-                    {pref}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Today's Meals Section */}
-        <div>
-          <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
-            <Utensils className="w-5 h-5 text-pink-600 dark:text-pink-400" />{" "}
-            Today&apos;s Meal Schedule & Cutoff Timers
-          </h2>
-
-          <div className="grid gap-4">
-            {meals.map((meal) => {
-              const isConsumed = meal.bookingStatus === "CONSUMED";
-              const isLocked = meal.bookingStatus === "LOCKED" || isConsumed;
-
-              let statusLabel = "Attending";
-              let badgeStyle =
-                "bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900";
-
-              if (meal.bookingStatus === "OPTED_OUT") {
-                statusLabel = "Skipping";
-                badgeStyle =
-                  "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900";
-              } else if (meal.bookingStatus === "LOCKED") {
-                statusLabel = "Prep Locked";
-                badgeStyle =
-                  "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900";
-              } else if (meal.bookingStatus === "CONSUMED") {
-                statusLabel = "Checked In";
-                badgeStyle =
-                  "bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800";
-              }
-
-              return (
-                <div
-                  key={meal.id}
-                  className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors"
-                >
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-bold text-xs rounded-full uppercase tracking-wide">
-                        {meal.meal_type}
-                      </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 bg-gray-50 dark:bg-gray-800/50 px-2.5 py-1 rounded-full border border-gray-200 dark:border-gray-700">
-                        <Clock className="w-3.5 h-3.5 text-pink-600 dark:text-pink-400" />
-                        {getCountdownText(meal.cutoff_time)}
-                      </span>
-                    </div>
-                    <h3 className="text-base font-semibold text-gray-800 dark:text-white mt-2">
-                      {meal.menu_items}
-                    </h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Rebate Value: ₹{meal.unit_cost} per skipped meal
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
-                    {meal.bookingStatus === "LOCKED" && (
-                      <button
-                        onClick={() => setActiveQRMeal(meal)}
-                        className="px-4 py-2 bg-pink-600 text-white rounded-xl text-xs font-semibold hover:bg-pink-700 shadow-sm flex items-center gap-1.5"
-                      >
-                        <QrCode className="w-4 h-4" /> Show QR Pass
-                      </button>
-                    )}
-
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${badgeStyle}`}
-                    >
-                      {statusLabel === "Attending" && (
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                      )}
-                      {statusLabel === "Skipping" && (
-                        <XCircle className="w-3.5 h-3.5" />
-                      )}
-                      {statusLabel === "Prep Locked" && (
-                        <Lock className="w-3.5 h-3.5" />
-                      )}
-                      {statusLabel}
-                    </span>
-
-                    {!isConsumed && (
-                      <button
-                        disabled={isLocked}
-                        onClick={() =>
-                          handleToggle(meal.id, meal.bookingStatus)
-                        }
-                        className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-                          isLocked
-                            ? "bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed"
-                            : meal.bookingStatus === "OPTED_IN"
-                              ? "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 border border-red-200 dark:border-red-900"
-                              : "bg-green-600 text-white hover:bg-green-700 shadow-sm"
-                        }`}
-                      >
-                        {isLocked
-                          ? "Locked"
-                          : meal.bookingStatus === "OPTED_IN"
-                            ? "Mark as Skipping"
-                            : "Mark as Attending"}
-                      </button>
-                    )}
-
-                    {!isConsumed && (
-                      <button
-                        onClick={() => handleSimulateLockToggle(meal)}
-                        title="Toggle Cutoff Lock for Live Viva Demo"
-                        className="px-2.5 py-2 rounded-xl text-[11px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                      >
-                        {meal.bookingStatus === "LOCKED"
-                          ? "Unlock (Demo)"
-                          : "Lock (Demo)"}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        <div className="text-right text-xs sm:text-sm text-[#777064] hidden md:block">
+          <div>Verified Opt-Out Rebates: <strong className="text-[#15803D] font-black">₹{rebateCalc.totalRebateCredit}</strong></div>
+          <div className="text-xs text-[#777064]">Credited to monthly fee statement</div>
         </div>
-
-        {/* Modular Rebate Card */}
-        <RebateCard
-          baseMonthlyFee={4500}
-          optedOutCount={optedOutMeals.length}
-          totalRebate={totalRebate}
-        />
       </div>
 
-      {/* Modular QR Modal */}
+      {/* Student Profile Switcher (Demo Only) */}
+      <StudentPersonaSwitcher
+        studentProfiles={studentProfiles}
+        activeStudentId={student?.id}
+        onSelectStudent={(s) => {
+          // Isolate each student's preference without cross-contaminating
+          const savedPref = typeof window !== "undefined"
+            ? (localStorage.getItem(`messmate_pref_${s.id}`) as DietaryPref | null)
+            : null;
+          const targetStudent = savedPref ? { ...s, dietary_pref: savedPref } : s;
+          setStudent(targetStudent);
+          setCurrentUser(targetStudent);
+          setErrorMessage(null);
+        }}
+      />
+
+      {/* Error Alert */}
+      {errorMessage && (
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-xs sm:text-sm text-rose-800 flex items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+          <button
+            onClick={() => setErrorMessage(null)}
+            className="text-rose-700 font-bold hover:text-rose-950 cursor-pointer"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Daily Mess Menu & Meal Cards */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-black text-[#252820] flex items-center gap-2">
+            <UtensilsCrossed className="w-5 h-5 text-[#244C3B]" /> Today&apos;s Mess Schedule &amp; Menu
+          </h2>
+          <button
+            onClick={loadMealsForStudent}
+            className="text-xs sm:text-sm text-[#777064] hover:text-[#252820] flex items-center gap-1.5 transition-colors cursor-pointer font-semibold"
+          >
+            <RefreshCw className="w-3.5 h-3.5" /> Refresh Schedule
+          </button>
+        </div>
+
+        <div className="grid gap-4">
+          {meals.length === 0 && !loading && (
+            <div className={`${THEME.card} p-8 text-center space-y-3`}>
+              <ChefHat className="w-8 h-8 text-[#777064] mx-auto" />
+              <p className="text-sm font-semibold text-[#252820]">No meal schedule loaded for today.</p>
+              <button onClick={loadMealsForStudent} className={THEME.btnPrimary + " mx-auto"}>
+                <RefreshCw className="w-3.5 h-3.5" /> Load Today&apos;s Menu
+              </button>
+            </div>
+          )}
+
+          {meals.map((meal) => (
+            <MealCard
+              key={meal.id}
+              meal={meal}
+              dietaryPref={student?.dietary_pref || "VEG"}
+              now={now}
+              onShowQR={(m) => setActiveQRMeal(m)}
+              onToggle={handleToggle}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Itemized Rebate Card */}
+      <RebateCard
+        baseMonthlyFee={DEFAULT_BASE_MONTHLY_FEE}
+        optedOutCount={rebateCalc.optedOutCount}
+        totalRebate={rebateCalc.totalRebateCredit}
+        rebateItems={optedOutMeals.map((m) => ({
+          id: m.id,
+          mealType: m.meal_type,
+          mealDate: m.meal_date || "Today",
+          unitCost: Number(m.unit_cost || 50),
+        }))}
+      />
+
       <QRPassModal
         meal={activeQRMeal}
         student={student}
@@ -412,6 +352,6 @@ export default function StudentDashboard() {
         qrCountdown={qrCountdown}
         onClose={() => setActiveQRMeal(null)}
       />
-    </main>
+    </AppShell>
   );
 }

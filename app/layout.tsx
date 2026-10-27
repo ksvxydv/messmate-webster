@@ -1,23 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/ui/Navbar";
 import { AuthProvider } from "@/lib/auth";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "MessMate | The Kamar-Taj Refectory Engine",
+  title: "MessMate | College Hostel Mess & Dining Management",
   description:
-    "Predictive Mess Resource Management & Cryptographic QR Meal Check-In Engine",
+    "Predictive hostel mess attendance, 30s rotating cryptographic QR passes, offline verification, and automated monthly rebate ledger for MNNIT Allahabad.",
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({
@@ -26,10 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans`}
-      >
+    <html lang="en" suppressHydrationWarning>
+      <body className="antialiased bg-[#F7F4EC] text-[#252820] min-h-screen selection:bg-[#244C3B] selection:text-white">
         <AuthProvider>
           <Navbar />
           {children}

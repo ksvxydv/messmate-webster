@@ -2,11 +2,14 @@
   "name": "messmate-webster",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --conditions=react-server --experimental-strip-types tests/full-lifecycle.test.mjs",
+    "test:concurrency": "node tests/double-scan.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
@@ -17,9 +20,11 @@
     "qrcode.react": "^4.2.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "recharts": "^3.10.1"
+    "recharts": "^3.10.1",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
