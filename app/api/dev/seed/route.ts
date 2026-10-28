@@ -8,14 +8,9 @@ import { requireRole } from "@/lib/server-auth";
 // Creates today's 3 meal slots + OPTED_IN bookings for every STUDENT
 export async function POST(request: Request) {
   try {
-    if (process.env.NODE_ENV === "production") {
-      const auth = await requireRole(request, ["ADMIN"]);
-      if ("errorResponse" in auth) {
-        return NextResponse.json(
-          { error: "Seeding is restricted to ADMIN in production." },
-          { status: 403 }
-        );
-      }
+    const auth = await requireRole(request, ["ADMIN"]);
+    if ("errorResponse" in auth && process.env.NODE_ENV === "production") {
+      return auth.errorResponse;
     }
 
     const serverNow = getServerNow();

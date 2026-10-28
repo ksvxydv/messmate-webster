@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Sliders, Utensils, RefreshCw, CheckCircle2, AlertTriangle, Zap } from "lucide-react";
+import { isDemoEnabled } from "@/lib/auth";
 
 interface DevTestingSuiteProps {
   onSeedToday: () => void;
@@ -22,6 +23,7 @@ export default function DevTestingSuite({
   testSummary,
   testResults,
 }: DevTestingSuiteProps) {
+  if (!isDemoEnabled) return null;
   return (
     <div className="border border-[#D99A51]/40 rounded-2xl bg-[#FAF7F0]/80 p-6 space-y-6">
       <div className="flex items-center gap-3 border-b border-[#E5E1D8] pb-3">

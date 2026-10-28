@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { getServerNow } from "@/lib/server-clock";
 import { ensureTodayMealSlots, getTodayDateString } from "@/lib/seed-service";
-import { createSessionToken } from "@/lib/server-auth";
+import { createSessionToken, hashPassword, sanitizeUserProfile } from "@/lib/server-auth";
 import { MNNIT_EMAIL_REGEX } from "@/config/constants";
 import { localStore } from "@/lib/local-store";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, regNo, email, dietaryPref } = body;
+    const { name, regNo, email, dietaryPref, password } = body;
 
     // 1. Validate required fields
     if (!name || typeof name !== "string" || name.trim().length < 2) {
@@ -37,10 +37,17 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!password || typeof password !== "string" || password.length < 8) {
+      return NextResponse.json(
+        { success: false, error: "Password must be at least 8 characters long." },
+        { status: 400 }
+      );
+    }
+
     const validPref = ["VEG", "NON_VEG", "JAIN"].includes(dietaryPref) ? dietaryPref : "VEG";
 
     // 2. Check if user already exists in local store or Supabase
-    const existingLocal = localStore.findUserByEmailOrRegNo(cleanEmail, regNo);
+    const existingLocal = localStore.findUserByEmailOrRegNo(cleanEmail, regNo, false);
     if (existingLocal) {
       return NextResponse.json(
         {
@@ -51,9 +58,12 @@ export async function POST(request: Request) {
       );
     }
 
+    // 3. Cryptographically hash password using PBKDF2 with HMAC-SHA256
+    const { hash: passwordHash, salt: passwordSalt } = await hashPassword(password);
+
     let newUser: any = null;
 
-    // 3. Attempt insertion into Supabase if reachable
+    // 4. Attempt insertion into Supabase if reachable
     try {
       const { data: existingUser } = await supabase
         .from("users")
@@ -79,6 +89,8 @@ export async function POST(request: Request) {
           email: cleanEmail,
           role: "STUDENT",
           dietary_pref: validPref,
+          password_hash: passwordHash,
+          password_salt: passwordSalt,
         })
         .select()
         .single();
@@ -91,7 +103,7 @@ export async function POST(request: Request) {
       console.warn("[register] Supabase unreachable, persisting to local store:", e);
     }
 
-    // 4. Fallback: If Supabase wasn't available, persist to local store
+    // 5. Fallback: If Supabase wasn't available, persist to local store
     if (!newUser) {
       newUser = localStore.registerUser({
         name: name.trim(),
@@ -99,6 +111,8 @@ export async function POST(request: Request) {
         email: cleanEmail,
         dietaryPref: validPref as any,
         role: "STUDENT",
+        passwordHash,
+        passwordSalt,
       });
     } else {
       // Also sync to local store for fast offline lookups
@@ -108,10 +122,12 @@ export async function POST(request: Request) {
         email: newUser.email,
         dietaryPref: newUser.dietary_pref,
         role: newUser.role,
+        passwordHash,
+        passwordSalt,
       });
     }
 
-    // 5. Seed today's bookings for the newly enrolled student
+    // 6. Seed today's bookings for the newly enrolled student
     const serverNow = getServerNow();
     const today = getTodayDateString(serverNow);
 
@@ -144,10 +160,12 @@ export async function POST(request: Request) {
       name: newUser.name,
     });
 
+    const sanitizedUser = sanitizeUserProfile(newUser);
+
     const response = NextResponse.json({
       success: true,
       message: "Registration successful. Welcome to MessMate!",
-      user: newUser,
+      user: sanitizedUser,
       token,
     });
 
@@ -163,32 +181,6 @@ export async function POST(request: Request) {
 
     return response;
   } catch (err: any) {
-    // Ultimate safety: even on unexpected error, register student locally and succeed
-    try {
-      const body = await request.clone().json().catch(() => ({}));
-      if (body.name && body.email) {
-        const fallbackUser = localStore.registerUser({
-          name: body.name,
-          regNo: body.regNo || "20250000",
-          email: body.email,
-          dietaryPref: body.dietaryPref || "VEG",
-          role: "STUDENT",
-        });
-        const token = await createSessionToken({
-          id: fallbackUser.id,
-          role: fallbackUser.role,
-          email: fallbackUser.email,
-          name: fallbackUser.name,
-        });
-        return NextResponse.json({
-          success: true,
-          message: "Registration successful. Welcome to MessMate!",
-          user: fallbackUser,
-          token,
-        });
-      }
-    } catch {}
-
     return NextResponse.json(
       { success: false, error: err.message || "An unexpected error occurred during registration." },
       { status: 500 }

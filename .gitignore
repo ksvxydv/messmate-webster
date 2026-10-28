@@ -39,6 +39,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local store data
+.messmate-data.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

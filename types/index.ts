@@ -21,6 +21,8 @@ export interface UserProfile {
   role: UserRole;
   dietary_pref: DietaryPref;
   created_at?: string;
+  password_hash?: string;
+  password_salt?: string;
 }
 
 export interface RegisterPayload {
@@ -28,6 +30,12 @@ export interface RegisterPayload {
   regNo: string;
   email: string;
   dietaryPref: DietaryPref;
+  password?: string;
+}
+
+export interface LoginPayload {
+  email: string;
+  password?: string;
 }
 
 export interface SessionPayload {

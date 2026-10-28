@@ -38,6 +38,9 @@ export interface LocalDatabaseSchema {
   bookings: StoredBooking[];
 }
 
+const DEFAULT_HASH = "ed5d71dc0a56a3ee293695093bd9a774dfc5f3a68874ac45f588a1a65aa3cacb";
+const DEFAULT_SALT = "0123456789abcdef0123456789abcdef";
+
 const DEFAULT_USERS: UserProfile[] = [
   {
     id: "783e35dd-de18-42b2-ab6a-8fb3218adeed",
@@ -46,6 +49,8 @@ const DEFAULT_USERS: UserProfile[] = [
     email: "aarav@mnnit.ac.in",
     role: "STUDENT",
     dietary_pref: "VEG",
+    password_hash: DEFAULT_HASH,
+    password_salt: DEFAULT_SALT,
   },
   {
     id: "26e80213-53ec-4db4-891d-a8468634188b",
@@ -54,6 +59,8 @@ const DEFAULT_USERS: UserProfile[] = [
     email: "rohan@mnnit.ac.in",
     role: "STUDENT",
     dietary_pref: "NON_VEG",
+    password_hash: DEFAULT_HASH,
+    password_salt: DEFAULT_SALT,
   },
   {
     id: "63e250d8-70ec-4f44-aad5-e33dd5680d4b",
@@ -62,6 +69,8 @@ const DEFAULT_USERS: UserProfile[] = [
     email: "20253137@mnnit.ac.in",
     role: "STUDENT",
     dietary_pref: "VEG",
+    password_hash: DEFAULT_HASH,
+    password_salt: DEFAULT_SALT,
   },
   {
     id: "b680b99e-4078-47ef-a743-39568ff7f3e5",
@@ -70,6 +79,8 @@ const DEFAULT_USERS: UserProfile[] = [
     email: "piyush@mnnit.ac.in",
     role: "STUDENT",
     dietary_pref: "JAIN",
+    password_hash: DEFAULT_HASH,
+    password_salt: DEFAULT_SALT,
   },
   {
     id: "8443a262-acc4-4d34-9ddd-757ddaeb227c",
@@ -78,6 +89,8 @@ const DEFAULT_USERS: UserProfile[] = [
     email: "staff@mnnit.ac.in",
     role: "STAFF",
     dietary_pref: "VEG",
+    password_hash: DEFAULT_HASH,
+    password_salt: DEFAULT_SALT,
   },
   {
     id: "1a794de0-0b8e-4d8a-b8a3-0bc1c4b05809",
@@ -86,6 +99,8 @@ const DEFAULT_USERS: UserProfile[] = [
     email: "admin@mnnit.ac.in",
     role: "ADMIN",
     dietary_pref: "VEG",
+    password_hash: DEFAULT_HASH,
+    password_salt: DEFAULT_SALT,
   },
 ];
 
@@ -104,6 +119,12 @@ class LocalStoreManager {
         const raw = fs.readFileSync(this.filePath, "utf-8");
         const parsed = JSON.parse(raw);
         if (parsed && Array.isArray(parsed.users) && parsed.users.length > 0) {
+          // Guarantee all loaded users have password protection
+          parsed.users = parsed.users.map((u: UserProfile) => ({
+            ...u,
+            password_hash: u.password_hash || DEFAULT_HASH,
+            password_salt: u.password_salt || DEFAULT_SALT,
+          }));
           return parsed;
         }
       }
@@ -127,22 +148,40 @@ class LocalStoreManager {
   }
 
   // --- Users Operations ---
-  public getUsers(): UserProfile[] {
-    return [...this.data.users];
+  public getUsers(sanitize: boolean = true): UserProfile[] {
+    return this.data.users.map((u) => {
+      if (sanitize) {
+        const { password_hash, password_salt, ...safe } = u;
+        return safe as UserProfile;
+      }
+      return { ...u };
+    });
   }
 
-  public findUserById(id: string): UserProfile | undefined {
-    return this.data.users.find((u) => u.id === id);
+  public findUserById(id: string, sanitize: boolean = true): UserProfile | undefined {
+    const user = this.data.users.find((u) => u.id === id);
+    if (!user) return undefined;
+    if (sanitize) {
+      const { password_hash, password_salt, ...safe } = user;
+      return safe as UserProfile;
+    }
+    return { ...user };
   }
 
-  public findUserByEmailOrRegNo(email: string, regNo?: string): UserProfile | undefined {
+  public findUserByEmailOrRegNo(email: string, regNo?: string, sanitize: boolean = true): UserProfile | undefined {
     const cleanEmail = email.trim().toLowerCase();
     const cleanReg = regNo?.trim().toUpperCase();
-    return this.data.users.find(
+    const user = this.data.users.find(
       (u) =>
         u.email.toLowerCase() === cleanEmail ||
         (cleanReg && u.reg_no.toUpperCase() === cleanReg)
     );
+    if (!user) return undefined;
+    if (sanitize) {
+      const { password_hash, password_salt, ...safe } = user;
+      return safe as UserProfile;
+    }
+    return { ...user };
   }
 
   public registerUser(profile: {
@@ -151,10 +190,13 @@ class LocalStoreManager {
     email: string;
     dietaryPref?: DietaryPref;
     role?: "STUDENT" | "STAFF" | "ADMIN";
+    passwordHash?: string;
+    passwordSalt?: string;
   }): UserProfile {
-    const existing = this.findUserByEmailOrRegNo(profile.email, profile.regNo);
+    const existing = this.findUserByEmailOrRegNo(profile.email, profile.regNo, false);
     if (existing) {
-      return existing;
+      const { password_hash, password_salt, ...safe } = existing;
+      return safe as UserProfile;
     }
 
     const newUser: UserProfile = {
@@ -164,6 +206,8 @@ class LocalStoreManager {
       email: profile.email.trim().toLowerCase(),
       role: profile.role || "STUDENT",
       dietary_pref: profile.dietaryPref || "VEG",
+      password_hash: profile.passwordHash || DEFAULT_HASH,
+      password_salt: profile.passwordSalt || DEFAULT_SALT,
     };
 
     this.data.users.push(newUser);

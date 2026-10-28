@@ -13,17 +13,22 @@ import {
   CalendarDays,
   ScanLine,
   ChartNoAxesCombined,
+  Eye,
+  EyeOff,
+  Lock,
 } from "lucide-react";
 import { DietaryPref } from "@/types";
 
 export default function AuthPortalCard() {
   const router = useRouter();
-  const { loginWithEmail, registerStudent, loginAsRole } = useAuth();
+  const { loginWithCredentials, registerStudent, loginAsRole, isDemoEnabled } = useAuth();
 
   const [activeTab, setActiveTab] = useState<"SIGN_IN" | "REGISTER">("SIGN_IN");
 
   // Sign In Form State
   const [emailInput, setEmailInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
@@ -31,6 +36,9 @@ export default function AuthPortalCard() {
   const [regName, setRegName] = useState("");
   const [regNo, setRegNo] = useState("");
   const [regEmail, setRegEmail] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regConfirmPassword, setRegConfirmPassword] = useState("");
+  const [showRegPassword, setShowRegPassword] = useState(false);
   const [regDiet, setRegDiet] = useState<DietaryPref>("VEG");
   const [regError, setRegError] = useState<string | null>(null);
   const [regSuccess, setRegSuccess] = useState<string | null>(null);
@@ -39,17 +47,22 @@ export default function AuthPortalCard() {
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailInput.trim()) return;
+    if (!passwordInput) {
+      setLoginError("Please enter your account password.");
+      return;
+    }
+
     setIsLoggingIn(true);
     setLoginError(null);
 
-    const res = await loginWithEmail(emailInput);
+    const res = await loginWithCredentials(emailInput, passwordInput);
     setIsLoggingIn(false);
 
     if (res.success && res.user) {
       const routes = { STUDENT: "/student", STAFF: "/staff", ADMIN: "/admin" };
       router.push(routes[res.user.role]);
     } else {
-      setLoginError(res.error || "Login failed. Please verify your email address.");
+      setLoginError(res.error || "Login failed. Please verify your email and password.");
     }
   };
 
@@ -71,6 +84,14 @@ export default function AuthPortalCard() {
       setRegError("Only official MNNIT email addresses (@mnnit.ac.in) are allowed to register.");
       return;
     }
+    if (!regPassword || regPassword.length < 8) {
+      setRegError("Password must be at least 8 characters long.");
+      return;
+    }
+    if (regPassword !== regConfirmPassword) {
+      setRegError("Passwords do not match. Please re-enter.");
+      return;
+    }
 
     setIsRegistering(true);
     const res = await registerStudent({
@@ -78,6 +99,7 @@ export default function AuthPortalCard() {
       regNo: regNo.trim(),
       email: cleanEmail,
       dietaryPref: regDiet,
+      password: regPassword,
     });
     setIsRegistering(false);
 
@@ -86,6 +108,8 @@ export default function AuthPortalCard() {
       setRegName("");
       setRegNo("");
       setRegEmail("");
+      setRegPassword("");
+      setRegConfirmPassword("");
       setTimeout(() => setActiveTab("SIGN_IN"), 2000);
     } else {
       setRegError(res.error || "Registration enrollment failed.");
@@ -147,8 +171,33 @@ export default function AuthPortalCard() {
               value={emailInput}
               onChange={(e) => setEmailInput(e.target.value)}
               placeholder="e.g. 20253137@mnnit.ac.in or warden@mnnit.ac.in"
+              required
               className="w-full bg-[#FAF7F0] border border-[#E5E1D8] rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#252820] placeholder-[#777064] focus:outline-none focus:border-[#244C3B] focus:ring-2 focus:ring-[#244C3B]/15 transition-all"
             />
+          </div>
+
+          <div className="space-y-1.5 text-left">
+            <label className="text-xs sm:text-sm font-bold text-[#252820]">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                type={showLoginPassword ? "text" : "password"}
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                placeholder="Enter your account password"
+                required
+                className="w-full bg-[#FAF7F0] border border-[#E5E1D8] rounded-xl px-3.5 py-2.5 pr-10 text-xs sm:text-sm text-[#252820] placeholder-[#777064] focus:outline-none focus:border-[#244C3B] focus:ring-2 focus:ring-[#244C3B]/15 transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => setShowLoginPassword(!showLoginPassword)}
+                aria-label={showLoginPassword ? "Hide password" : "Show password"}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#777064] hover:text-[#252820] cursor-pointer"
+              >
+                {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           {loginError && (
@@ -160,7 +209,7 @@ export default function AuthPortalCard() {
 
           <button
             type="submit"
-            disabled={isLoggingIn || !emailInput.trim()}
+            disabled={isLoggingIn || !emailInput.trim() || !passwordInput}
             className="w-full py-2.5 sm:py-3 bg-[#244C3B] hover:bg-[#1B3A2D] text-white font-black text-xs sm:text-sm rounded-xl shadow-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
           >
             <LogIn className="w-4 h-4" />
@@ -168,35 +217,37 @@ export default function AuthPortalCard() {
             <ArrowRight className="w-4 h-4 ml-1" />
           </button>
 
-          {/* Quick Persona Access for Testing */}
-          <div className="pt-3 border-t border-[#E5E1D8] space-y-2">
-            <p className="text-xs text-[#777064] font-bold text-center">
-              Evaluation Quick Login (Demo):
-            </p>
-            <div className="flex flex-wrap justify-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickPersona("STUDENT")}
-                className="px-3 py-1.5 bg-[#FAF7F0] hover:bg-[#F0ECE1] active:scale-[0.97] text-[#252820] text-xs font-bold rounded-lg border border-[#E5E1D8] transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <CalendarDays className="w-3.5 h-3.5 text-[#244C3B]" /> Student
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickPersona("STAFF")}
-                className="px-3 py-1.5 bg-[#FAF7F0] hover:bg-[#F0ECE1] active:scale-[0.97] text-[#252820] text-xs font-bold rounded-lg border border-[#E5E1D8] transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <ScanLine className="w-3.5 h-3.5 text-emerald-700" /> Staff
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickPersona("ADMIN")}
-                className="px-3 py-1.5 bg-[#FAF7F0] hover:bg-[#F0ECE1] active:scale-[0.97] text-[#252820] text-xs font-bold rounded-lg border border-[#E5E1D8] transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <ChartNoAxesCombined className="w-3.5 h-3.5 text-[#D99A51]" /> Admin
-              </button>
+          {/* Quick Persona Access for Testing (Dev Mode Only) */}
+          {isDemoEnabled && (
+            <div className="pt-3 border-t border-[#E5E1D8] space-y-2">
+              <p className="text-xs text-[#777064] font-bold text-center">
+                Evaluation Quick Login (Dev Mode):
+              </p>
+              <div className="flex flex-wrap justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleQuickPersona("STUDENT")}
+                  className="px-3 py-1.5 bg-[#FAF7F0] hover:bg-[#F0ECE1] active:scale-[0.97] text-[#252820] text-xs font-bold rounded-lg border border-[#E5E1D8] transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <CalendarDays className="w-3.5 h-3.5 text-[#244C3B]" /> Student
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickPersona("STAFF")}
+                  className="px-3 py-1.5 bg-[#FAF7F0] hover:bg-[#F0ECE1] active:scale-[0.97] text-[#252820] text-xs font-bold rounded-lg border border-[#E5E1D8] transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <ScanLine className="w-3.5 h-3.5 text-emerald-700" /> Staff
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickPersona("ADMIN")}
+                  className="px-3 py-1.5 bg-[#FAF7F0] hover:bg-[#F0ECE1] active:scale-[0.97] text-[#252820] text-xs font-bold rounded-lg border border-[#E5E1D8] transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <ChartNoAxesCombined className="w-3.5 h-3.5 text-[#D99A51]" /> Admin
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </form>
       )}
 
@@ -210,6 +261,7 @@ export default function AuthPortalCard() {
               value={regName}
               onChange={(e) => setRegName(e.target.value)}
               placeholder="e.g. Aditya Verma"
+              required
               className="w-full bg-[#FAF7F0] border border-[#E5E1D8] rounded-xl px-3.5 py-2 text-xs sm:text-sm text-[#252820] placeholder-[#777064] focus:outline-none focus:border-[#244C3B] focus:ring-2 focus:ring-[#244C3B]/15 transition-all"
             />
           </div>
@@ -223,6 +275,7 @@ export default function AuthPortalCard() {
               value={regNo}
               onChange={(e) => setRegNo(e.target.value)}
               placeholder="e.g. 20251004"
+              required
               className="w-full bg-[#FAF7F0] border border-[#E5E1D8] rounded-xl px-3.5 py-2 text-xs sm:text-sm text-[#252820] placeholder-[#777064] focus:outline-none focus:border-[#244C3B] focus:ring-2 focus:ring-[#244C3B]/15 transition-all font-mono"
             />
           </div>
@@ -241,8 +294,45 @@ export default function AuthPortalCard() {
               value={regEmail}
               onChange={(e) => setRegEmail(e.target.value)}
               placeholder="e.g. 20251004@mnnit.ac.in"
+              required
               className="w-full bg-[#FAF7F0] border border-[#E5E1D8] rounded-xl px-3.5 py-2 text-xs sm:text-sm text-[#252820] placeholder-[#777064] focus:outline-none focus:border-[#244C3B] focus:ring-2 focus:ring-[#244C3B]/15 transition-all"
             />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="space-y-1">
+              <label className="text-xs sm:text-sm font-bold text-[#252820]">Password</label>
+              <div className="relative">
+                <input
+                  type={showRegPassword ? "text" : "password"}
+                  value={regPassword}
+                  onChange={(e) => setRegPassword(e.target.value)}
+                  placeholder="Min 8 characters"
+                  required
+                  className="w-full bg-[#FAF7F0] border border-[#E5E1D8] rounded-xl px-3.5 py-2 pr-9 text-xs sm:text-sm text-[#252820] placeholder-[#777064] focus:outline-none focus:border-[#244C3B] transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowRegPassword(!showRegPassword)}
+                  aria-label={showRegPassword ? "Hide password" : "Show password"}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#777064] hover:text-[#252820] cursor-pointer"
+                >
+                  {showRegPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs sm:text-sm font-bold text-[#252820]">Confirm Password</label>
+              <input
+                type={showRegPassword ? "text" : "password"}
+                value={regConfirmPassword}
+                onChange={(e) => setRegConfirmPassword(e.target.value)}
+                placeholder="Repeat password"
+                required
+                className="w-full bg-[#FAF7F0] border border-[#E5E1D8] rounded-xl px-3.5 py-2 text-xs sm:text-sm text-[#252820] placeholder-[#777064] focus:outline-none focus:border-[#244C3B] transition-all"
+              />
+            </div>
           </div>
 
           <div className="space-y-1.5">

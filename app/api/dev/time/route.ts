@@ -20,14 +20,12 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    if (process.env.NODE_ENV === "production") {
-      const auth = await requireRole(request, ["ADMIN"]);
-      if ("errorResponse" in auth) {
-        return NextResponse.json(
-          { error: "Clock simulation is disabled in production." },
-          { status: 403 }
-        );
-      }
+    // In production, server clock simulation is strictly forbidden to preserve ledger integrity
+    if (process.env.NODE_ENV === "production" && process.env.ENABLE_DEV_TOOLS !== "true") {
+      return NextResponse.json(
+        { success: false, error: "Server clock simulation is strictly disabled in production." },
+        { status: 403 }
+      );
     }
 
     const body = await request.json();

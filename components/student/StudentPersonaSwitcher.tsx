@@ -4,6 +4,7 @@ import React from "react";
 import { Users } from "lucide-react";
 import { THEME } from "@/lib/theme";
 import { UserProfile } from "@/types";
+import { isDemoEnabled } from "@/lib/auth";
 
 interface StudentPersonaSwitcherProps {
   studentProfiles: UserProfile[];
@@ -16,7 +17,7 @@ export default function StudentPersonaSwitcher({
   activeStudentId,
   onSelectStudent,
 }: StudentPersonaSwitcherProps) {
-  if (studentProfiles.length <= 1) return null;
+  if (!isDemoEnabled || studentProfiles.length <= 1) return null;
 
   return (
     <div

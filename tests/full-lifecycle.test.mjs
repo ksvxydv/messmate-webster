@@ -4,7 +4,13 @@ if (!process.env.HMAC_SECRET) {
 }
 
 import { generateQRToken, verifyQRToken } from "../lib/crypto.ts";
-import { createSessionToken, verifySessionToken } from "../lib/server-auth.ts";
+import {
+  createSessionToken,
+  verifySessionToken,
+  hashPassword,
+  verifyPassword,
+  sanitizeUserProfile,
+} from "../lib/server-auth.ts";
 import { getMealTimingDetails, formatCountdownText } from "../lib/meal-times.ts";
 import { calculateRebates, computeBillingPeriod } from "../lib/rebates.ts";
 import {
@@ -279,6 +285,62 @@ async function runTestSuite() {
   assert(canTransition("CONSUMED", "OPTED_OUT") === false, "Terminal consumed state strictly forbids opt-out");
   assert(canTransition("CONSUMED", "OPTED_IN") === false, "Terminal consumed state strictly forbids re-opt-in");
   assert(canTransition("CONSUMED", "LOCKED") === false, "Terminal consumed state strictly forbids re-locking");
+
+  // TEST 12: Production Cryptographic Authentication & Password Hardening
+  console.log("\n12. Production Cryptographic Authentication & Password Hardening");
+
+  // 12.1 PBKDF2 Password Hashing
+  const testPassword = "SecurePassword@2026!";
+  const { hash: pHash, salt: pSalt } = await hashPassword(testPassword);
+  assert(typeof pHash === "string" && pHash.length === 64, "PBKDF2-HMAC-SHA256 generates 64-char hex hash");
+  assert(typeof pSalt === "string" && pSalt.length === 32, "Cryptographic salt is 32-char hex string");
+
+  // Unique salt generation
+  const { hash: pHash2, salt: pSalt2 } = await hashPassword(testPassword);
+  assert(pSalt !== pSalt2, "Each password hash invocation uses unique random salt");
+  assert(pHash !== pHash2, "Different salts produce unique hashes for identical plaintext");
+
+  // 12.2 Timing-Safe Password Verification
+  const validVerification = await verifyPassword(testPassword, pHash, pSalt);
+  assert(validVerification === true, "verifyPassword successfully validates matching password");
+
+  const invalidVerification = await verifyPassword("IncorrectPassword123!", pHash, pSalt);
+  assert(invalidVerification === false, "verifyPassword strictly rejects non-matching password");
+
+  const emptyVerification = await verifyPassword("", pHash, pSalt);
+  assert(emptyVerification === false, "verifyPassword strictly rejects empty password");
+
+  // 12.3 User Profile Sanitization (Credential Leak Prevention)
+  const rawProfile = {
+    id: "user-test-uuid-999",
+    email: "student999@mnnit.ac.in",
+    role: "STUDENT",
+    name: "Test Student",
+    reg_no: "20239999",
+    hostel: "SVBH",
+    room_no: "101",
+    password_hash: pHash,
+    password_salt: pSalt,
+  };
+
+  const sanitized = sanitizeUserProfile(rawProfile);
+  assert(sanitized.password_hash === undefined, "sanitizeUserProfile completely strips password_hash");
+  assert(sanitized.password_salt === undefined, "sanitizeUserProfile completely strips password_salt");
+  assert(sanitized.id === rawProfile.id, "sanitizeUserProfile preserves user ID");
+  assert(sanitized.email === rawProfile.email, "sanitizeUserProfile preserves user email");
+  assert(sanitized.role === rawProfile.role, "sanitizeUserProfile preserves user role");
+
+  // 12.4 Server Session Cryptographic Integrity
+  const sessionToken = await createSessionToken(sanitized);
+  assert(typeof sessionToken === "string" && sessionToken.length > 30, "createSessionToken generates valid signed JWT-style token");
+
+  const sessionUser = await verifySessionToken(sessionToken);
+  assert(sessionUser !== null && sessionUser.email === rawProfile.email, "verifySessionToken successfully decodes and validates valid token");
+  assert(sessionUser.role === "STUDENT", "verifySessionToken preserves correct user role");
+
+  const tamperedSession = sessionToken.slice(0, -6) + "000000";
+  const tamperedUser = await verifySessionToken(tamperedSession);
+  assert(tamperedUser === null, "verifySessionToken strictly rejects tampered session signature");
 
   console.log("\n==========================================");
   console.log(`Test Execution Finished: ${passed} Passed, ${failed} Failed`);

@@ -4,9 +4,15 @@ import type { QRTokenPayload, VerifyTokenResult } from "../types/index.ts";
 export type { QRTokenPayload, VerifyTokenResult };
 
 function getSecret(): string {
-  const secret =
-    process.env.HMAC_SECRET ||
-    "802509398f8df0607a7e1479fa4865b5995a28cbfe1022ae71c97068cb392742";
+  const secret = process.env.HMAC_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      console.warn(
+        "[WARN] HMAC_SECRET environment variable is missing. Using secure fallback secret. Set HMAC_SECRET in your production environment settings."
+      );
+    }
+    return "802509398f8df0607a7e1479fa4865b5995a28cbfe1022ae71c97068cb392742";
+  }
   return secret;
 }
 

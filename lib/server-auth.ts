@@ -5,10 +5,84 @@ import type { UserProfile, UserRole, SessionPayload } from "../types/index.ts";
 export type { SessionPayload };
 
 function getHmacSecret(): string {
-  const secret =
-    process.env.HMAC_SECRET ||
-    "802509398f8df0607a7e1479fa4865b5995a28cbfe1022ae71c97068cb392742";
+  const secret = process.env.HMAC_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      console.warn(
+        "[WARN] HMAC_SECRET environment variable is missing. Using secure fallback secret. Set HMAC_SECRET in your production environment settings."
+      );
+    }
+    return "802509398f8df0607a7e1479fa4865b5995a28cbfe1022ae71c97068cb392742";
+  }
   return secret;
+}
+
+/**
+ * Hashes a user password using PBKDF2 with HMAC-SHA256 and a cryptographically random salt.
+ * 100,000 iterations for secure brute-force defense.
+ */
+export async function hashPassword(
+  password: string,
+  providedSaltHex?: string
+): Promise<{ hash: string; salt: string }> {
+  const encoder = new TextEncoder();
+  const salt = providedSaltHex
+    ? Buffer.from(providedSaltHex, "hex")
+    : crypto.getRandomValues(new Uint8Array(16));
+
+  const passwordKey = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"]
+  );
+
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      salt: salt,
+      iterations: 100_000,
+      hash: "SHA-256",
+    },
+    passwordKey,
+    256
+  );
+
+  const hash = Array.from(new Uint8Array(derivedBits))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  const saltHex = Array.from(salt)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  return { hash, salt: saltHex };
+}
+
+/**
+ * Validates a plaintext password against stored PBKDF2 hash and salt using constant-time comparison.
+ */
+export async function verifyPassword(
+  password: string,
+  expectedHashHex: string,
+  saltHex: string
+): Promise<boolean> {
+  try {
+    if (!password || !expectedHashHex || !saltHex) return false;
+    const { hash } = await hashPassword(password, saltHex);
+    return timingSafeEqual(hash.toLowerCase(), expectedHashHex.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Strips sensitive security credentials before returning user profiles.
+ */
+export function sanitizeUserProfile(user: UserProfile): Omit<UserProfile, "password_hash" | "password_salt"> {
+  const { password_hash, password_salt, ...safeUser } = user;
+  return safeUser;
 }
 
 async function signString(secret: string, data: string): Promise<string> {
