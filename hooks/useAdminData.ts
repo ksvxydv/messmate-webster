@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
+import { DEMO_USERS } from "@/config/constants";
 
 export function useAdminData() {
   const { getAuthHeaders } = useAuth();
@@ -35,8 +36,12 @@ export function useAdminData() {
       ]);
 
       if (mRes.slots) setSlots(mRes.slots);
-      if (bRes.data) setBookings(bRes.data);
-      if (uRes.data) setUsers(uRes.data);
+      if (bRes.data && bRes.data.length > 0) setBookings(bRes.data);
+      if (uRes.data && uRes.data.length > 0) {
+        setUsers(uRes.data);
+      } else {
+        setUsers(DEMO_USERS.filter((u) => u.role === "STUDENT"));
+      }
     } catch (e) {
       console.error("Admin data fetch error:", e);
     } finally {

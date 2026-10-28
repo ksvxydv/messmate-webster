@@ -19,6 +19,22 @@ export const BRAND_COLORS = {
 
 export const DEMO_USERS: UserProfile[] = [
   {
+    id: "f47ac10b-58cc-4372-a567-0e02b2c3d471",
+    reg_no: "20251001",
+    name: "Aarav Sharma",
+    email: "20251001@mnnit.ac.in",
+    role: "STUDENT",
+    dietary_pref: "VEG",
+  },
+  {
+    id: "f47ac10b-58cc-4372-a567-0e02b2c3d472",
+    reg_no: "20251002",
+    name: "Rohan Verma",
+    email: "20251002@mnnit.ac.in",
+    role: "STUDENT",
+    dietary_pref: "NON_VEG",
+  },
+  {
     id: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     reg_no: "20253137",
     name: "Keshav",
@@ -27,18 +43,10 @@ export const DEMO_USERS: UserProfile[] = [
     dietary_pref: "VEG",
   },
   {
-    id: "e48ac10b-58cc-4372-a567-0e02b2c3d480",
-    reg_no: "20253188",
-    name: "Piyush Kumar Chaurasiya",
-    email: "20253188@mnnit.ac.in",
-    role: "STUDENT",
-    dietary_pref: "NON_VEG",
-  },
-  {
-    id: "d49ac10b-58cc-4372-a567-0e02b2c3d481",
-    reg_no: "20253073",
-    name: "Ayushi Chaudhary",
-    email: "20253073@mnnit.ac.in",
+    id: "f47ac10b-58cc-4372-a567-0e02b2c3d473",
+    reg_no: "20251423",
+    name: "Piyush",
+    email: "20251423@mnnit.ac.in",
     role: "STUDENT",
     dietary_pref: "JAIN",
   },

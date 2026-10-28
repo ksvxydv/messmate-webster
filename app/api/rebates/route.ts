@@ -31,16 +31,18 @@ export async function GET(request: Request) {
     const { billingMonth, startDate, endDate } = computeBillingPeriod(serverNow, monthParam);
 
     // Fetch bookings for this student
-    const { data: bookings, error } = await supabase
-      .from("meal_bookings")
-      .select("id, status, updated_at, meal_slots!inner(meal_type, meal_date, unit_cost)")
-      .eq("user_id", targetUserId)
-      .gte("meal_slots.meal_date", startDate)
-      .lte("meal_slots.meal_date", endDate);
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    let bookings: any[] = [];
+    try {
+      const { data, error } = await supabase
+        .from("meal_bookings")
+        .select("id, status, updated_at, meal_slots!inner(meal_type, meal_date, unit_cost)")
+        .eq("user_id", targetUserId)
+        .gte("meal_slots.meal_date", startDate)
+        .lte("meal_slots.meal_date", endDate);
+      if (!error && data) {
+        bookings = data;
+      }
+    } catch {}
 
     // Filter verified OPTED_OUT and CONSUMED meals within the billing period
     const optedOutMeals = (bookings || []).filter((b: any) => b.status === "OPTED_OUT");

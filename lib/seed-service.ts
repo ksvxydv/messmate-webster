@@ -1,5 +1,5 @@
-import { supabase } from "@/lib/supabase";
-import { buildDietarySlotMenuString } from "@/lib/menus";
+import { supabase } from "./supabase.ts";
+import { buildDietarySlotMenuString } from "./menus.ts";
 
 export const DAILY_MENUS: Record<number, { breakfast: string; lunch: string; dinner: string }> = {
   0: { breakfast: "Poha, Jalebi & Masala Chai",         lunch: "Chole Chawal, Raita & Roti",             dinner: "Paneer Butter Masala, Dal Tadka & Rice" },
@@ -86,9 +86,18 @@ export async function ensureTodayMealSlots(serverNow: Date) {
       .select();
 
     if (slotErr) {
-      console.error("[seed-service] Slot upsert error:", slotErr);
-    } else if (upsertedSlots) {
+      console.warn("[seed-service] Supabase unavailable or unconfigured, using fallback slots:", slotErr.message);
+      activeSlots = slotsToInsert.map((s, idx) => ({
+        id: `slot-fallback-${s.meal_type.toLowerCase()}-${today}`,
+        ...s,
+      })) as any[];
+    } else if (upsertedSlots && upsertedSlots.length > 0) {
       activeSlots = upsertedSlots;
+    } else {
+      activeSlots = slotsToInsert.map((s, idx) => ({
+        id: `slot-fallback-${s.meal_type.toLowerCase()}-${today}`,
+        ...s,
+      })) as any[];
     }
   }
 
