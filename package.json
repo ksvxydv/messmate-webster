@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --conditions=react-server --experimental-strip-types tests/full-lifecycle.test.mjs",
-    "test:concurrency": "node tests/double-scan.test.js"
+    "test:concurrency": "node --conditions=react-server --experimental-strip-types tests/double-scan.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

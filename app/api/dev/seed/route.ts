@@ -2,11 +2,22 @@ import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { getServerNow } from "@/lib/server-clock";
 import { ensureTodayMealSlots, getTodayDateString } from "@/lib/seed-service";
+import { requireRole } from "@/lib/server-auth";
 
 // POST /api/dev/seed  — idempotent: safe to call multiple times
 // Creates today's 3 meal slots + OPTED_IN bookings for every STUDENT
-export async function POST() {
+export async function POST(request: Request) {
   try {
+    if (process.env.NODE_ENV === "production") {
+      const auth = await requireRole(request, ["ADMIN"]);
+      if ("errorResponse" in auth) {
+        return NextResponse.json(
+          { error: "Seeding is restricted to ADMIN in production." },
+          { status: 403 }
+        );
+      }
+    }
+
     const serverNow = getServerNow();
     const result = await ensureTodayMealSlots(serverNow);
 

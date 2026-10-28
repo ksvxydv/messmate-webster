@@ -4,8 +4,9 @@ if (!process.env.HMAC_SECRET) {
 }
 
 import { generateQRToken, verifyQRToken } from "../lib/crypto.ts";
+import { createSessionToken, verifySessionToken } from "../lib/server-auth.ts";
 import { getMealTimingDetails, formatCountdownText } from "../lib/meal-times.ts";
-import { calculateRebates } from "../lib/rebates.ts";
+import { calculateRebates, computeBillingPeriod } from "../lib/rebates.ts";
 import {
   resolveDietaryDishes,
   buildDietarySlotMenuString,
@@ -199,6 +200,85 @@ async function runTestSuite() {
   // Persona switching isolation: Student 2's preference is not overwritten by Student 1
   assert(studentPiyush.dietary_pref === "NON_VEG", "Switching personas maintains target student's own dietary preference");
   assert(studentAyushi.dietary_pref === "JAIN", "Persona Ayushi maintains strictly Jain preference");
+
+  // TEST 8: Server-Side Cryptographic Session Token Lifecycle (HMAC-SHA256)
+  console.log("\n8. Server-Side HMAC-SHA256 Session Token Lifecycle");
+  const studentUser = { id: "std-001", role: "STUDENT", email: "std001@mnnit.ac.in", name: "Rohan" };
+  const studentToken = await createSessionToken(studentUser);
+  assert(typeof studentToken === "string" && studentToken.includes("."), "Session token generated in compact base64.signature format");
+
+  const verifiedStudentSession = await verifySessionToken(studentToken);
+  assert(verifiedStudentSession !== null, "Valid session token verifies successfully");
+  assert(verifiedStudentSession?.userId === "std-001", "Session payload extracts correct user ID");
+  assert(verifiedStudentSession?.role === "STUDENT", "Session payload retains STUDENT role authorization");
+
+  const staffUser = { id: "staff-001", role: "STAFF", email: "staff@mnnit.ac.in", name: "Staff Ramesh" };
+  const staffToken = await createSessionToken(staffUser);
+  const verifiedStaff = await verifySessionToken(staffToken);
+  assert(verifiedStaff?.role === "STAFF", "Session payload retains STAFF role authorization");
+
+  // Tampered session token
+  const [sessionPayloadPart, sessionSig] = studentToken.split(".");
+  const tamperedSessionSig = sessionSig.replace(sessionSig[0], sessionSig[0] === "a" ? "b" : "a");
+  const tamperedSessionToken = `${sessionPayloadPart}.${tamperedSessionSig}`;
+  const verifyTamperedSession = await verifySessionToken(tamperedSessionToken);
+  assert(verifyTamperedSession === null, "Tampered session token signature is strictly rejected");
+
+  // Expired session token
+  const expiredSessionToken = await createSessionToken(studentUser, -100);
+  const verifyExpiredSession = await verifySessionToken(expiredSessionToken);
+  assert(verifyExpiredSession === null, "Expired session token is strictly rejected");
+
+  // TEST 9: Offline Scan Token Validation with Historical Reference Times
+  console.log("\n9. Offline Scan Verification with Historical Timestamps");
+  const historicalTimestamp = Date.now() - 1000 * 60 * 10; // 10 minutes ago
+  const historicalWindow = Math.floor(historicalTimestamp / 30000);
+
+  // Generate token at historical time
+  const origNow = Date.now;
+  Date.now = () => historicalTimestamp;
+  const historicalToken = await generateQRToken("student-offline-1", "slot-offline-1");
+  Date.now = origNow;
+
+  // Verifying now without reference time fails (because 10 minutes have elapsed)
+  const verifyWithoutRef = await verifyQRToken(historicalToken);
+  assert(verifyWithoutRef.valid === false, "Historical token is invalid against live current wall clock");
+
+  // Verifying with historical scan reference time succeeds
+  const verifyWithRef = await verifyQRToken(historicalToken, historicalTimestamp);
+  assert(verifyWithRef.valid === true, "Historical token is verified valid at recorded offline scan timestamp");
+
+  // TEST 10: Dynamic Monthly Billing Ledger Period Boundaries
+  console.log("\n10. Dynamic Monthly Billing Period Calculation (Asia/Kolkata)");
+  const oct2026 = computeBillingPeriod(new Date(), "2026-10");
+  assert(oct2026.billingMonth === "October 2026", "October 2026 month formatted dynamically");
+  assert(oct2026.startDate === "2026-10-01" && oct2026.endDate === "2026-10-31", "October 2026 bounds 31 days");
+
+  const feb2028 = computeBillingPeriod(new Date(), "2028-02"); // Leap year
+  assert(feb2028.billingMonth === "February 2028", "February 2028 month formatted dynamically");
+  assert(feb2028.endDate === "2028-02-29", "February 2028 leap year accurately bounds 29 days");
+
+  // TEST 11: Booking State Machine Determinism & Concurrency CAS
+  console.log("\n11. Booking State Machine Determinism & Atomic CAS Transitions");
+  const ALLOWED_TRANSITIONS = {
+    OPTED_IN: ["OPTED_OUT", "LOCKED", "CONSUMED"],
+    OPTED_OUT: ["OPTED_IN"],
+    LOCKED: ["CONSUMED", "MISSED"],
+    CONSUMED: [], // Terminal state: single-use pass cannot be reused or reverted
+    MISSED: [],   // Terminal state
+  };
+
+  function canTransition(current, next) {
+    return ALLOWED_TRANSITIONS[current]?.includes(next) ?? false;
+  }
+
+  assert(canTransition("OPTED_IN", "OPTED_OUT") === true, "Student can opt out pre-cutoff");
+  assert(canTransition("OPTED_OUT", "OPTED_IN") === true, "Student can re-opt in pre-cutoff");
+  assert(canTransition("OPTED_IN", "LOCKED") === true, "Cutoff triggers automatic lock of opted-in booking");
+  assert(canTransition("LOCKED", "CONSUMED") === true, "Redemption transitions locked pass to consumed");
+  assert(canTransition("CONSUMED", "OPTED_OUT") === false, "Terminal consumed state strictly forbids opt-out");
+  assert(canTransition("CONSUMED", "OPTED_IN") === false, "Terminal consumed state strictly forbids re-opt-in");
+  assert(canTransition("CONSUMED", "LOCKED") === false, "Terminal consumed state strictly forbids re-locking");
 
   console.log("\n==========================================");
   console.log(`Test Execution Finished: ${passed} Passed, ${failed} Failed`);

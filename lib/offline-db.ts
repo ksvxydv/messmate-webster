@@ -1,17 +1,10 @@
 import { openDB, IDBPDatabase } from "idb";
+import { OfflineScanRecord } from "@/types";
+
+export type { OfflineScanRecord };
 
 const DB_NAME = "messmate-offline-db";
 const STORE_NAME = "offline-scans";
-
-export interface OfflineScanRecord {
-  id?: number;
-  userId: string;
-  mealSlotId: string;
-  qrToken?: string;
-  timestamp: string;
-  synced: boolean;
-  createdAt: string;
-}
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -81,8 +74,15 @@ export async function queueOfflineScan(scanPayload: {
     };
   }
 
-  // 2. Insert into IndexedDB queue
+  // 2. Generate unique deterministic queue ID
+  const queueId =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `q_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+  // 3. Insert into IndexedDB queue
   const newRecord: OfflineScanRecord = {
+    queueId,
     userId: scanPayload.userId,
     mealSlotId: scanPayload.mealSlotId,
     qrToken: scanPayload.qrToken,
@@ -116,7 +116,38 @@ export async function getPendingScanCount(): Promise<number> {
 }
 
 /**
- * Clear or mark scans as synced once reconnected
+ * Item-level reconciliation deletion:
+ * Deletes only the specific reconciled scans by their numeric id or queueId.
+ * Never wipes the entire queue on partial failures.
+ */
+export async function removeOfflineScans(
+  identifiers: Array<number | string>
+): Promise<void> {
+  if (!identifiers || identifiers.length === 0) return;
+
+  const db = await getOfflineDB();
+  const tx = db.transaction(STORE_NAME, "readwrite");
+  const store = tx.objectStore(STORE_NAME);
+
+  const allRecords = await store.getAll();
+  const idSet = new Set(identifiers.map((i) => String(i)));
+
+  for (const record of allRecords) {
+    if (
+      (record.id && idSet.has(String(record.id))) ||
+      (record.queueId && idSet.has(String(record.queueId)))
+    ) {
+      if (record.id !== undefined) {
+        await store.delete(record.id);
+      }
+    }
+  }
+
+  await tx.done;
+}
+
+/**
+ * Full queue reset (maintenance only)
  */
 export async function clearOfflineScans(): Promise<void> {
   const db = await getOfflineDB();

@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { getServerNow } from "@/lib/server-clock";
 import { ensureTodayMealSlots, getTodayDateString } from "@/lib/seed-service";
-
-const MNNIT_EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@mnnit\.ac\.in$/i;
+import { createSessionToken } from "@/lib/server-auth";
+import { MNNIT_EMAIL_REGEX } from "@/config/constants";
 
 export async function POST(request: Request) {
   try {
@@ -100,11 +100,31 @@ export async function POST(request: Request) {
         .upsert(studentBookings, { onConflict: "user_id,meal_slot_id", ignoreDuplicates: true });
     }
 
-    return NextResponse.json({
+    const token = await createSessionToken({
+      id: newUser.id,
+      role: newUser.role,
+      email: newUser.email,
+      name: newUser.name,
+    });
+
+    const response = NextResponse.json({
       success: true,
       message: "Registration successful. Welcome to MessMate!",
       user: newUser,
+      token,
     });
+
+    response.cookies.set({
+      name: "messmate_token",
+      value: token,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60,
+      path: "/",
+    });
+
+    return response;
   } catch (err: any) {
     return NextResponse.json(
       { success: false, error: err.message || "An unexpected error occurred during registration." },

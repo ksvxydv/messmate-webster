@@ -1,21 +1,7 @@
 import "server-only";
+import type { QRTokenPayload, VerifyTokenResult } from "../types/index.ts";
 
-export interface QRTokenPayload {
-  userId: string;
-  mealSlotId: string;
-  timeWindow: number;
-  signature: string;
-}
-
-export interface VerifyTokenResult {
-  valid: boolean;
-  reason?: string;
-  payload?: {
-    userId: string;
-    mealSlotId: string;
-    timeWindow: number;
-  };
-}
+export type { QRTokenPayload, VerifyTokenResult };
 
 function getSecret(): string {
   const secret = process.env.HMAC_SECRET;
@@ -68,6 +54,7 @@ export async function generateQRToken(
 
 export async function verifyQRToken(
   tokenString: string,
+  referenceTimeMs?: number,
 ): Promise<VerifyTokenResult> {
   try {
     const parsed: unknown = JSON.parse(tokenString);
@@ -98,7 +85,8 @@ export async function verifyQRToken(
       return { valid: false, reason: "Malformed QR token fields." };
     }
 
-    const currentWindow = Math.floor(Date.now() / 30_000);
+    const nowMs = typeof referenceTimeMs === "number" ? referenceTimeMs : Date.now();
+    const currentWindow = Math.floor(nowMs / 30_000);
 
     // Accept the current or immediately previous 30-second window.
     if (timeWindow > currentWindow || currentWindow - timeWindow > 1) {

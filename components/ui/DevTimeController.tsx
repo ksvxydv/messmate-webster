@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Clock3, ChevronDown, RotateCcw, Check, Sparkles } from "lucide-react";
+import { useAuth } from "@/lib/auth";
 
 export default function DevTimeController() {
+  const { getAuthHeaders } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [currentTimeText, setCurrentTimeText] = useState<string>("--:--:--");
   const [isSimulated, setIsSimulated] = useState(false);
@@ -34,7 +36,7 @@ export default function DevTimeController() {
     try {
       const res = await fetch("/api/dev/time", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({ scenario }),
       });
       const data = await res.json();
@@ -54,7 +56,7 @@ export default function DevTimeController() {
     try {
       const res = await fetch("/api/dev/time", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({ reset: true }),
       });
       const data = await res.json();
@@ -77,7 +79,7 @@ export default function DevTimeController() {
       const iso = new Date(customTime).toISOString();
       const res = await fetch("/api/dev/time", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({ targetTime: iso }),
       });
       const data = await res.json();

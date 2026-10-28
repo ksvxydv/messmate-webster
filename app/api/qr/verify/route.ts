@@ -2,16 +2,23 @@ import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { verifyQRToken } from "@/lib/crypto";
 import { getServerNow } from "@/lib/server-clock";
+import { requireRole } from "@/lib/server-auth";
 
 export async function POST(request: Request) {
   try {
+    // 1. Enforce staff/admin authentication
+    const auth = await requireRole(request, ["STAFF", "ADMIN"]);
+    if ("errorResponse" in auth) {
+      return auth.errorResponse;
+    }
+
     const body = await request.json();
-    const { qrToken, bookingId, staffId } = body;
+    const { qrToken, bookingId } = body;
 
     let targetUserId: string | null = null;
     let targetMealSlotId: string | null = null;
 
-    // 1. In-memory Cryptographic Validation
+    // 2. In-memory Cryptographic Validation
     if (qrToken) {
       const verification = await verifyQRToken(qrToken);
       if (!verification.valid || !verification.payload) {
@@ -38,16 +45,16 @@ export async function POST(request: Request) {
     }
 
     const scanTimestamp = getServerNow().toISOString();
+    const staffId = auth.user.id;
 
-    // 2. Atomic Compare-And-Swap (CAS) Database Update
-    // Explicitly disambiguate user foreign key to avoid PGRST201 error
+    // 3. Atomic Compare-And-Swap (CAS) Database Update
     // Eligible states for redemption: LOCKED (cutoff elapsed) or OPTED_IN (attending)
     let query = supabase
       .from("meal_bookings")
       .update({
         status: "CONSUMED",
         scanned_at: scanTimestamp,
-        scanned_by: staffId || null,
+        scanned_by: staffId,
       })
       .in("status", ["LOCKED", "OPTED_IN"]);
 
@@ -72,7 +79,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. If 0 rows updated, inspect state to return informative cashier conflict response
+    // 4. If 0 rows updated, inspect state to return informative conflict response
     if (!updated) {
       let checkQuery = supabase.from("meal_bookings").select("id, status, scanned_at");
       if (targetUserId && targetMealSlotId) {
@@ -122,7 +129,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 4. Success Response
+    // 5. Success Response
     return NextResponse.json({
       success: true,
       message: "Pass verified & single-use redemption recorded!",

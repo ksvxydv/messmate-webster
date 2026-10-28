@@ -1,25 +1,9 @@
 // Meal timing configurations, culinary visual themes, and serving window logic for MessMate
 // Indian food-inspired palette: Deep Green (#244C3B), Warm Ivory (#F7F4EC), Saffron (#D99A51)
 
-export interface MealWindowConfig {
-  mealType: "BREAKFAST" | "LUNCH" | "DINNER";
-  cutoffHour: number;
-  cutoffMinute: number;
-  startHour: number;
-  startMinute: number;
-  endHour: number;
-  endMinute: number;
-  timingLabel: string;
-  cutoffLabel: string;
-  theme: {
-    accentColor: string;
-    badgeBg: string;
-    borderGlow: string;
-    headerGradient: string;
-    iconColor: string;
-    tagStyle: string;
-  };
-}
+import type { MealWindowConfig, MealStatusDetails, MealWindowTheme } from "../types/index.ts";
+
+export type { MealWindowConfig, MealStatusDetails, MealWindowTheme };
 
 export const MEAL_TIMINGS: Record<string, MealWindowConfig> = {
   BREAKFAST: {
@@ -81,17 +65,7 @@ export const MEAL_TIMINGS: Record<string, MealWindowConfig> = {
   },
 };
 
-export interface MealStatusDetails {
-  timingLabel: string;
-  cutoffLabel: string;
-  isCutoffPassed: boolean;
-  isServingNow: boolean;
-  isBeforeServing: boolean;
-  isAfterServing: boolean;
-  statusBadgeText: string;
-  statusBadgeColor: "emerald" | "blue" | "amber" | "slate" | "rose";
-  theme: MealWindowConfig["theme"];
-}
+
 
 /**
  * Computes exact serving window status relative to the current authoritative clock

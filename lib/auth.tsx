@@ -9,70 +9,16 @@ import {
   useCallback,
 } from "react";
 import { supabase } from "@/lib/supabase";
+import { UserProfile, UserRole, RegisterPayload } from "@/types";
+import { DEMO_USERS } from "@/config/constants";
 
-export interface UserProfile {
-  id: string;
-  reg_no: string;
-  name: string;
-  email: string;
-  role: "STUDENT" | "STAFF" | "ADMIN";
-  dietary_pref: "VEG" | "NON_VEG" | "JAIN";
-}
-
-// Fallback demo users if Supabase initial connection is delayed
-const DEMO_USERS: UserProfile[] = [
-  {
-    id: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-    reg_no: "20253137",
-    name: "Keshav",
-    email: "20253137@mnnit.ac.in",
-    role: "STUDENT",
-    dietary_pref: "VEG",
-  },
-  {
-    id: "e48ac10b-58cc-4372-a567-0e02b2c3d480",
-    reg_no: "20253188",
-    name: "Piyush Kumar Chaurasiya",
-    email: "20253188@mnnit.ac.in",
-    role: "STUDENT",
-    dietary_pref: "NON_VEG",
-  },
-  {
-    id: "d49ac10b-58cc-4372-a567-0e02b2c3d481",
-    reg_no: "20253073",
-    name: "Ayushi Chaudhary",
-    email: "20253073@mnnit.ac.in",
-    role: "STUDENT",
-    dietary_pref: "JAIN",
-  },
-  {
-    id: "8443a262-acc4-4d34-9ddd-757ddaeb227c",
-    reg_no: "STAFF-01",
-    name: "Ramesh Kumar (Mess Staff)",
-    email: "staff@mnnit.ac.in",
-    role: "STAFF",
-    dietary_pref: "VEG",
-  },
-  {
-    id: "1a794de0-0b8e-4d8a-b8a3-0bc1c4b05809",
-    reg_no: "ADMIN-01",
-    name: "Chief Warden / Mess Manager",
-    email: "warden@mnnit.ac.in",
-    role: "ADMIN",
-    dietary_pref: "VEG",
-  },
-];
-
-interface RegisterPayload {
-  name: string;
-  regNo: string;
-  email: string;
-  dietaryPref: "VEG" | "NON_VEG" | "JAIN";
-}
+export { DEMO_USERS };
+export type { UserProfile, UserRole, RegisterPayload };
 
 interface AuthContextType {
   currentUser: UserProfile | null;
   role: string;
+  token: string | null;
   setRole: (role: string) => void;
   setCurrentUser: (user: UserProfile) => void;
   availableUsers: UserProfile[];
@@ -88,11 +34,13 @@ interface AuthContextType {
   logout: () => void;
   refreshUsers: () => Promise<UserProfile[]>;
   loading: boolean;
+  getAuthHeaders: () => HeadersInit;
 }
 
 const AuthContext = createContext<AuthContextType>({
   currentUser: null,
   role: "STUDENT",
+  token: null,
   setRole: () => {},
   setCurrentUser: () => {},
   availableUsers: [],
@@ -102,11 +50,51 @@ const AuthContext = createContext<AuthContextType>({
   logout: () => {},
   refreshUsers: async () => [],
   loading: true,
+  getAuthHeaders: () => ({}),
 });
+
+export function getStoredAuthToken(): string | null {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("messmate_auth_token");
+  }
+  return null;
+}
+
+export function getAuthHeaders(): HeadersInit {
+  const token = getStoredAuthToken();
+  if (token) {
+    return {
+      Authorization: `Bearer ${token}`,
+      "x-messmate-session": token,
+    };
+  }
+  return {};
+}
+
+async function requestServerSessionToken(user: UserProfile): Promise<string | null> {
+  try {
+    const res = await fetch("/api/auth/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: user.id, email: user.email }),
+    });
+    const data = await res.json();
+    if (res.ok && data.token) {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("messmate_auth_token", data.token);
+      }
+      return data.token;
+    }
+  } catch (err) {
+    console.warn("[auth] Failed to retrieve server session token:", err);
+  }
+  return null;
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [role, setRole] = useState<string>("STUDENT");
+  const [token, setToken] = useState<string | null>(null);
   const [availableUsers, setAvailableUsers] = useState<UserProfile[]>(DEMO_USERS);
   const [loading, setLoading] = useState(true);
 
@@ -130,9 +118,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const usersList = await fetchUsers();
 
         // Check local storage for persisted session
-        const savedUserId = typeof window !== "undefined"
-          ? localStorage.getItem("messmate_user_id")
-          : null;
+        const savedUserId =
+          typeof window !== "undefined"
+            ? localStorage.getItem("messmate_user_id")
+            : null;
 
         let matched = usersList.find((u) => u.id === savedUserId);
         if (!matched) {
@@ -143,6 +132,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (matched) {
           setCurrentUser(matched);
           setRole(matched.role);
+          const sToken = await requestServerSessionToken(matched);
+          if (sToken) setToken(sToken);
         }
       } catch (err) {
         console.error("Auth init fallback to mock:", err);
@@ -187,6 +178,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (typeof window !== "undefined") {
         localStorage.setItem("messmate_user_id", user.id);
       }
+      const sToken = await requestServerSessionToken(user);
+      if (sToken) setToken(sToken);
+
       return { success: true, user };
     },
     [availableUsers],
@@ -212,6 +206,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setRole("STUDENT");
         if (typeof window !== "undefined") {
           localStorage.setItem("messmate_user_id", newUser.id);
+          if (data.token) {
+            localStorage.setItem("messmate_auth_token", data.token);
+            setToken(data.token);
+          }
         }
         return { success: true, user: newUser };
       } catch (err: any) {
@@ -234,6 +232,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (typeof window !== "undefined") {
           localStorage.setItem("messmate_user_id", targetUser.id);
         }
+        const sToken = await requestServerSessionToken(targetUser);
+        if (sToken) setToken(sToken);
       }
       return targetUser;
     },
@@ -242,29 +242,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     setCurrentUser(null);
+    setToken(null);
     if (typeof window !== "undefined") {
       localStorage.removeItem("messmate_user_id");
+      localStorage.removeItem("messmate_auth_token");
     }
   }, []);
 
-  const handleSetRole = useCallback((newRole: string) => {
-    setRole(newRole);
-    if (currentUser?.role !== newRole) {
-      const matched = availableUsers.find((u) => u.role === newRole);
-      if (matched) {
-        setCurrentUser(matched);
-        if (typeof window !== "undefined") {
-          localStorage.setItem("messmate_user_id", matched.id);
+  const handleSetRole = useCallback(
+    async (newRole: string) => {
+      setRole(newRole);
+      if (currentUser?.role !== newRole) {
+        const matched = availableUsers.find((u) => u.role === newRole);
+        if (matched) {
+          setCurrentUser(matched);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("messmate_user_id", matched.id);
+          }
+          const sToken = await requestServerSessionToken(matched);
+          if (sToken) setToken(sToken);
         }
       }
+    },
+    [availableUsers, currentUser?.role],
+  );
+
+  const contextGetAuthHeaders = useCallback((): HeadersInit => {
+    const activeToken = token || getStoredAuthToken();
+    if (activeToken) {
+      return {
+        Authorization: `Bearer ${activeToken}`,
+        "x-messmate-session": activeToken,
+      };
     }
-  }, [availableUsers, currentUser?.role]);
+    return {};
+  }, [token]);
 
   return (
     <AuthContext.Provider
       value={{
         currentUser,
         role,
+        token,
         setRole: handleSetRole,
         setCurrentUser,
         availableUsers,
@@ -274,6 +293,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         refreshUsers: fetchUsers,
         loading,
+        getAuthHeaders: contextGetAuthHeaders,
       }}
     >
       {children}

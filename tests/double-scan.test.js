@@ -1,3 +1,9 @@
+if (!process.env.HMAC_SECRET) {
+  process.env.HMAC_SECRET = "test_hmac_secret_for_automated_lifecycle_suite_0123456789abcdef";
+}
+
+import { createSessionToken } from "../lib/server-auth.ts";
+
 /**
  * MESSMATE SELF-HEALING CONCURRENCY & DOUBLE-SCAN STRESS TEST
  */
@@ -7,6 +13,13 @@ async function runSelfHealingConcurrencyTest() {
   console.log("⚡ Starting MessMate Concurrency Test...");
 
   try {
+    const staffToken = await createSessionToken({
+      id: "8443a262-acc4-4d34-9ddd-757ddaeb227c",
+      role: "STAFF",
+      email: "staff@mnnit.ac.in",
+      name: "Ramesh Kumar (Mess Staff)",
+    });
+
     // 1. Fetch live meals and bookings directly from our running Next.js API
     const res = await fetch(`${BASE_URL}/api/meals`);
     const data = await res.json();
@@ -35,7 +48,10 @@ async function runSelfHealingConcurrencyTest() {
       try {
         const response = await fetch(`${BASE_URL}/api/qr/verify`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${staffToken}`,
+          },
           body: JSON.stringify({ bookingId: testBookingId }),
         });
         const resData = await response.json();

@@ -18,10 +18,26 @@ export const SLOT_CONFIGS = [
 ] as const;
 
 export function getTodayDateString(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const year = parts.find((p) => p.type === "year")?.value || String(date.getFullYear());
+  const month = parts.find((p) => p.type === "month")?.value || String(date.getMonth() + 1).padStart(2, "0");
+  const day = parts.find((p) => p.type === "day")?.value || String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+export function getISTDayOfWeek(date: Date): number {
+  const dayStr = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Kolkata",
+    weekday: "short",
+  }).format(date);
+  const map: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  return map[dayStr] ?? date.getDay();
 }
 
 /**
@@ -30,7 +46,7 @@ export function getTodayDateString(date: Date): string {
  */
 export async function ensureTodayMealSlots(serverNow: Date) {
   const today = getTodayDateString(serverNow);
-  const dow = serverNow.getDay();
+  const dow = getISTDayOfWeek(serverNow);
   const menu = DAILY_MENUS[dow] || DAILY_MENUS[1];
 
   const menuItems: Record<string, string> = {
@@ -51,14 +67,10 @@ export async function ensureTodayMealSlots(serverNow: Date) {
   // 2. If slots don't exist for today, upsert them
   if (activeSlots.length === 0) {
     const slotsToInsert = SLOT_CONFIGS.map(({ meal_type, hour, minute, unit_cost }) => {
-      const cutoff = new Date(
-        serverNow.getFullYear(),
-        serverNow.getMonth(),
-        serverNow.getDate(),
-        hour,
-        minute,
-        0
-      );
+      const hh = String(hour).padStart(2, "0");
+      const mm = String(minute).padStart(2, "0");
+      const cutoff = new Date(`${today}T${hh}:${mm}:00+05:30`);
+
       return {
         meal_date: today,
         meal_type,

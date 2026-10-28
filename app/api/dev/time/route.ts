@@ -6,6 +6,7 @@ import {
   resetServerTime,
   setServerOffsetMs,
 } from "@/lib/server-clock";
+import { requireRole } from "@/lib/server-auth";
 
 export async function GET() {
   const now = getServerNow();
@@ -19,6 +20,16 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    if (process.env.NODE_ENV === "production") {
+      const auth = await requireRole(request, ["ADMIN"]);
+      if ("errorResponse" in auth) {
+        return NextResponse.json(
+          { error: "Clock simulation is disabled in production." },
+          { status: 403 }
+        );
+      }
+    }
+
     const body = await request.json();
     const { scenario, targetTime, reset, offsetMinutes } = body;
 
