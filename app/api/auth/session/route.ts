@@ -5,9 +5,22 @@ import {
   getAuthenticatedUser,
 } from "@/lib/server-auth";
 import { UserProfile } from "@/types";
+import { localStore } from "@/lib/local-store";
 
-// GET /api/auth/session - Verify existing session and return current user
+// GET /api/auth/session - Verify existing session and return current user, or return all users
 export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  if (searchParams.get("all") === "true") {
+    // Return all users from local store and Supabase
+    try {
+      const { data: dbUsers } = await supabase.from("users").select("*");
+      if (dbUsers && dbUsers.length > 0) {
+        return NextResponse.json({ success: true, users: dbUsers });
+      }
+    } catch {}
+    return NextResponse.json({ success: true, users: localStore.getUsers() });
+  }
+
   const user = await getAuthenticatedUser(request);
   if (!user) {
     return NextResponse.json(
@@ -27,21 +40,33 @@ export async function POST(request: Request) {
     let user: UserProfile | null = null;
 
     if (userId) {
-      const { data } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", userId)
-        .maybeSingle();
+      try {
+        const { data } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", userId)
+          .maybeSingle();
 
-      if (data) user = data as UserProfile;
+        if (data) user = data as UserProfile;
+      } catch {}
+
+      if (!user) {
+        user = (localStore.findUserById(userId) as UserProfile) || null;
+      }
     } else if (email) {
-      const { data } = await supabase
-        .from("users")
-        .select("*")
-        .ilike("email", email.trim().toLowerCase())
-        .maybeSingle();
+      try {
+        const { data } = await supabase
+          .from("users")
+          .select("*")
+          .ilike("email", email.trim().toLowerCase())
+          .maybeSingle();
 
-      if (data) user = data as UserProfile;
+        if (data) user = data as UserProfile;
+      } catch {}
+
+      if (!user) {
+        user = (localStore.findUserByEmailOrRegNo(email) as UserProfile) || null;
+      }
     }
 
     if (!user) {

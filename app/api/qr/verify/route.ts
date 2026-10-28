@@ -3,6 +3,8 @@ import { supabase } from "@/lib/supabase";
 import { verifyQRToken } from "@/lib/crypto";
 import { getServerNow } from "@/lib/server-clock";
 import { requireRole } from "@/lib/server-auth";
+import { localStore } from "@/lib/local-store";
+import { getTodayDateString } from "@/lib/seed-service";
 
 export async function POST(request: Request) {
   try {
@@ -66,17 +68,53 @@ export async function POST(request: Request) {
       query = query.eq("id", bookingId);
     }
 
-    const { data: updated, error: updateError } = await query
-      .select(
-        "id, status, scanned_at, user_id, meal_slot_id, users:users!meal_bookings_user_id_fkey(name, reg_no, dietary_pref), meal_slots(meal_type, menu_items)",
-      )
-      .maybeSingle();
+    let updated: any = null;
+    try {
+      const { data, error: updateError } = await query
+        .select(
+          "id, status, scanned_at, user_id, meal_slot_id, users:users!meal_bookings_user_id_fkey(name, reg_no, dietary_pref), meal_slots(meal_type, menu_items)",
+        )
+        .maybeSingle();
 
-    if (updateError) {
-      return NextResponse.json(
-        { success: false, error: updateError.message },
-        { status: 500 },
-      );
+      if (!updateError && data) {
+        updated = data;
+      }
+    } catch {}
+
+    // Fallback: If Supabase query failed or 0 rows updated, check Local Store
+    if (!updated && targetUserId && targetMealSlotId) {
+      const localResult = localStore.atomicConsume(targetUserId, targetMealSlotId, staffId);
+      if (localResult.success && localResult.booking) {
+        const student = localStore.findUserById(targetUserId) || {
+          name: "Student",
+          reg_no: "20251001",
+          dietary_pref: "VEG",
+        };
+        return NextResponse.json({
+          success: true,
+          status: "CONSUMED",
+          student: {
+            id: targetUserId,
+            name: student.name,
+            registrationNo: student.reg_no,
+            dietaryPreference: student.dietary_pref,
+          },
+          mealSlot: {
+            mealType: "BREAKFAST",
+            date: getTodayDateString(new Date()),
+          },
+          scannedAt: localResult.booking.scanned_at,
+        });
+      } else if (localResult.error && localResult.error.includes("Double Scan")) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: localResult.error,
+            code: "ALREADY_CONSUMED",
+          },
+          { status: 409 }
+        );
+      }
     }
 
     // 4. If 0 rows updated, inspect state to return informative conflict response

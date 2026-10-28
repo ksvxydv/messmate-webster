@@ -100,6 +100,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUsers = useCallback(async () => {
     try {
+      const res = await fetch("/api/auth/session?all=true");
+      const json = await res.json();
+      if (json && Array.isArray(json.users) && json.users.length > 0) {
+        setAvailableUsers(json.users as UserProfile[]);
+        return json.users as UserProfile[];
+      }
+    } catch {}
+
+    try {
       const { data: dbUsers } = await supabase.from("users").select("*");
       if (dbUsers && dbUsers.length > 0) {
         setAvailableUsers(dbUsers as UserProfile[]);
@@ -154,15 +163,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
 
       if (!user) {
-        // Query Supabase live
-        const { data } = await supabase
-          .from("users")
-          .select("*")
-          .ilike("email", cleanEmail)
-          .maybeSingle();
+        // Query server session API (which checks both Supabase and Local Store)
+        try {
+          const res = await fetch("/api/auth/session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: cleanEmail }),
+          });
+          const json = await res.json();
+          if (json.success && json.user) {
+            user = json.user;
+          }
+        } catch {}
 
-        if (data) {
-          user = data as UserProfile;
+        if (!user) {
+          try {
+            const { data } = await supabase
+              .from("users")
+              .select("*")
+              .ilike("email", cleanEmail)
+              .maybeSingle();
+
+            if (data) {
+              user = data as UserProfile;
+            }
+          } catch {}
         }
       }
 

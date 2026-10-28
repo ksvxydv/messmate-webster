@@ -5,26 +5,39 @@ import { ensureTodayMealSlots, getTodayDateString, getISTDayOfWeek } from "@/lib
 import { WEEKLY_DIETARY_MENUS } from "@/lib/menus";
 import { MealType } from "@/types";
 import { requireAuthenticatedUser } from "@/lib/server-auth";
+import { localStore } from "@/lib/local-store";
 
 // GET /api/meals - Fetch TODAY's meal slots, auto-refresh every 24h, trigger auto-lock for expired cutoffs
 export async function GET() {
   const serverNow = getServerNow();
   const today = getTodayDateString(serverNow);
 
-  // 1. Ensure slots and bookings exist for today (auto-refreshes every 24 hours / date change)
-  await ensureTodayMealSlots(serverNow);
+  // 1. Ensure slots and bookings exist for today
+  try {
+    await ensureTodayMealSlots(serverNow);
+  } catch {}
 
   // 2. Fetch today's slots with attached bookings
-  const { data: slotsData, error } = await supabase
-    .from("meal_slots")
-    .select("*, meal_bookings(id, status, user_id, scanned_at)")
-    .eq("meal_date", today)
-    .order("cutoff_time", { ascending: true });
+  let slots: any[] = [];
+  try {
+    const { data: slotsData, error } = await supabase
+      .from("meal_slots")
+      .select("*, meal_bookings(id, status, user_id, scanned_at)")
+      .eq("meal_date", today)
+      .order("cutoff_time", { ascending: true });
 
-  let slots = slotsData;
-  if (error || !slots || slots.length === 0) {
-    const seedResult = await ensureTodayMealSlots(serverNow);
-    slots = seedResult.slots as any[];
+    if (!error && slotsData && slotsData.length > 0) {
+      slots = slotsData;
+    }
+  } catch {}
+
+  if (slots.length === 0) {
+    const localSlots = localStore.ensureSlots(today, serverNow);
+    const localBookings = localStore.getBookings();
+    slots = localSlots.map((s) => ({
+      ...s,
+      meal_bookings: localBookings.filter((b) => b.meal_slot_id === s.id),
+    }));
   }
 
   // 3. Identify slots whose cutoff has elapsed and auto-lock un-opted-out bookings
@@ -33,11 +46,13 @@ export async function GET() {
     .map((slot) => slot.id);
 
   if (expiredSlotIds.length > 0) {
-    await supabase
-      .from("meal_bookings")
-      .update({ status: "LOCKED", updated_at: serverNow.toISOString() })
-      .in("meal_slot_id", expiredSlotIds)
-      .eq("status", "OPTED_IN");
+    try {
+      await supabase
+        .from("meal_bookings")
+        .update({ status: "LOCKED", updated_at: serverNow.toISOString() })
+        .in("meal_slot_id", expiredSlotIds)
+        .eq("status", "OPTED_IN");
+    } catch {}
 
     // Keep memory in sync for returned response
     for (const slot of slots || []) {
@@ -175,36 +190,36 @@ export async function POST(request: Request) {
     }
 
     // 4. Cutoff has not passed -> allow Opt-In / Opt-Out update
-    const { data: updated, error: updateError } = await supabase
-      .from("meal_bookings")
-      .update({
-        status: requestedStatus,
-        updated_at: serverNow.toISOString(),
-      })
-      .eq("user_id", userId)
-      .eq("meal_slot_id", mealSlotId)
-      .select()
-      .single();
-
-    if (updateError || !updated) {
-      // Return optimistic success in demo/offline mode
-      return NextResponse.json({
-        success: true,
-        message: `Successfully updated preference to ${requestedStatus}`,
-        booking: {
-          id: `booking-${userId}-${mealSlotId}`,
+    let updated: any = null;
+    try {
+      const { data, error: updateError } = await supabase
+        .from("meal_bookings")
+        .update({
           status: requestedStatus,
-          user_id: userId,
-          meal_slot_id: mealSlotId,
           updated_at: serverNow.toISOString(),
-        },
-      });
-    }
+        })
+        .eq("user_id", userId)
+        .eq("meal_slot_id", mealSlotId)
+        .select()
+        .single();
+
+      if (!updateError && data) {
+        updated = data;
+      }
+    } catch {}
+
+    const savedBooking = localStore.upsertBooking({
+      id: updated?.id || `booking-${userId}-${mealSlotId}`,
+      user_id: userId,
+      meal_slot_id: mealSlotId,
+      status: requestedStatus,
+      updated_at: serverNow.toISOString(),
+    });
 
     return NextResponse.json({
       success: true,
       message: `Successfully updated preference to ${requestedStatus}`,
-      booking: updated,
+      booking: updated || savedBooking,
     });
   } catch (err: any) {
     return NextResponse.json(

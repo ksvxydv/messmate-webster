@@ -29,19 +29,32 @@ export function useAdminData() {
   const fetchAdminData = useCallback(async () => {
     setLoading(true);
     try {
-      const [mRes, bRes, uRes] = await Promise.all([
-        fetch("/api/meals").then((r) => r.json()),
-        supabase.from("meal_bookings").select("*"),
-        supabase.from("users").select("*").eq("role", "STUDENT"),
-      ]);
-
+      const mRes = await fetch("/api/meals").then((r) => r.json()).catch(() => ({ slots: [] }));
       if (mRes.slots) setSlots(mRes.slots);
-      if (bRes.data && bRes.data.length > 0) setBookings(bRes.data);
-      if (uRes.data && uRes.data.length > 0) {
-        setUsers(uRes.data);
-      } else {
-        setUsers(DEMO_USERS.filter((u) => u.role === "STUDENT"));
+
+      let bData: any[] = [];
+      try {
+        const { data } = await supabase.from("meal_bookings").select("*");
+        if (data && data.length > 0) bData = data;
+      } catch {}
+      setBookings(bData);
+
+      let uData: any[] = [];
+      try {
+        const uRes = await fetch("/api/auth/session?all=true").then((r) => r.json()).catch(() => null);
+        if (uRes && Array.isArray(uRes.users)) {
+          uData = uRes.users.filter((u: any) => u.role === "STUDENT");
+        }
+      } catch {}
+
+      if (uData.length === 0) {
+        try {
+          const { data } = await supabase.from("users").select("*").eq("role", "STUDENT");
+          if (data && data.length > 0) uData = data;
+        } catch {}
       }
+
+      setUsers(uData.length > 0 ? uData : DEMO_USERS.filter((u) => u.role === "STUDENT"));
     } catch (e) {
       console.error("Admin data fetch error:", e);
     } finally {

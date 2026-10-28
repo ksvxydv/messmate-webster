@@ -42,10 +42,14 @@ export function useStudentMeals(student: UserProfile | null) {
         setServerTimeOffset(new Date(data.serverTime).getTime() - Date.now());
       }
 
-      const { data: bookings } = await supabase
-        .from("meal_bookings")
-        .select("*")
-        .eq("user_id", student.id);
+      let bookings: any[] = [];
+      try {
+        const { data: dbBookings } = await supabase
+          .from("meal_bookings")
+          .select("*")
+          .eq("user_id", student.id);
+        if (dbBookings) bookings = dbBookings;
+      } catch {}
 
       const formatted: StudentMealView[] = (data.slots || []).map((slot: any) => {
         const booking =
