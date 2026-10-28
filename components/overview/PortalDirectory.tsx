@@ -79,14 +79,14 @@ export default function PortalDirectory() {
             return (
               <div
                 key={p.title}
-                className={`${THEME.card} p-6 sm:p-7 flex flex-col justify-between space-y-4 shadow-xs`}
+                className={`${THEME.card} p-6 sm:p-7 flex flex-col justify-between space-y-4 shadow-xs card-hover-lift group`}
               >
                 <div className="space-y-3">
-                  <div className="w-11 h-11 rounded-xl bg-[#244C3B]/10 border border-[#244C3B]/20 flex items-center justify-center text-[#244C3B]">
+                  <div className="w-11 h-11 rounded-xl bg-[#244C3B]/10 border border-[#244C3B]/20 flex items-center justify-center text-[#244C3B] group-hover:scale-105 transition-transform">
                     <Icon className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-black text-[#252820]">{p.title}</h3>
+                    <h3 className="text-base font-black text-[#252820] group-hover:text-[#244C3B] transition-colors">{p.title}</h3>
                     <p className="text-xs sm:text-sm text-[#777064] mt-1.5 leading-relaxed font-medium">
                       {p.desc}
                     </p>
@@ -108,9 +108,10 @@ export default function PortalDirectory() {
 
                   <Link
                     href={p.href}
-                    className="w-full py-2.5 bg-[#FAF7F0] hover:bg-[#F0ECE1] text-[#252820] text-xs sm:text-sm font-bold rounded-xl border border-[#E5E1D8] flex items-center justify-center gap-1.5 transition-colors"
+                    className="w-full py-2.5 bg-[#FAF7F0] hover:bg-[#244C3B] hover:text-white text-[#252820] text-xs sm:text-sm font-bold rounded-xl border border-[#E5E1D8] hover:border-[#244C3B] flex items-center justify-center gap-1.5 transition-all duration-150 active:scale-[0.98]"
                   >
-                    Open Portal <ArrowRight className="w-3.5 h-3.5" />
+                    <span>Open Portal</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </div>
               </div>

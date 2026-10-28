@@ -96,7 +96,7 @@ export default function LiveMenuPreview({ todayMeals }: LiveMenuPreviewProps) {
             return (
               <div
                 key={meal.id}
-                className="p-3.5 sm:p-4 rounded-xl bg-[#FAF7F0] border border-[#E5E1D8] flex flex-col md:flex-row md:items-center justify-between gap-3 hover:border-[#D99A51]/50 transition-colors"
+                className="p-3.5 sm:p-4 rounded-xl bg-[#FAF7F0] border border-[#E5E1D8] flex flex-col md:flex-row md:items-center justify-between gap-3 hover:border-[#244C3B]/40 card-hover-lift transition-all"
               >
                 <div className="space-y-1.5 flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -107,11 +107,11 @@ export default function LiveMenuPreview({ todayMeals }: LiveMenuPreviewProps) {
                     <span className="text-xs text-[#777064] font-medium">({timingText})</span>
                   </div>
 
-                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  <div key={`${meal.id}-${activePref}`} className="flex flex-wrap gap-1.5 pt-0.5 animate-fade-in-up">
                     {dishes.map((d, i) => (
                       <span
                         key={i}
-                        className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white text-[#252820] border border-[#E5E1D8] shadow-2xs flex items-center gap-1.5 whitespace-nowrap"
+                        className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white text-[#252820] border border-[#E5E1D8] shadow-2xs flex items-center gap-1.5 whitespace-nowrap hover:border-[#244C3B]/40 transition-colors"
                       >
                         <Utensils className="w-3 h-3 text-[#244C3B] shrink-0" />
                         <span>{d}</span>

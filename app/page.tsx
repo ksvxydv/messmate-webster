@@ -37,6 +37,22 @@ export default function HomePage() {
         <p className="text-xs sm:text-sm text-[#777064] leading-relaxed max-w-lg mx-auto font-medium">
           Centralized meal scheduling, automated opt-out rebates, and secure dining hall entry for MNNIT Allahabad.
         </p>
+
+        {/* Real-time System Badges */}
+        <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-xs text-[#777064] font-medium">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#E5E1D8] shadow-2xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>30s Rotating HMAC Passes</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#E5E1D8] shadow-2xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#244C3B]" />
+            <span>Server Cutoff State Engine</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#E5E1D8] shadow-2xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#D99A51]" />
+            <span>Offline IndexedDB PWA Sync</span>
+          </span>
+        </div>
       </section>
 
       {/* Main Grid: Today's Menu Highlight + Sign In / Register Card */}

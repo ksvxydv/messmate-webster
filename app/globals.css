@@ -97,6 +97,82 @@
   animation: fadeInUp 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scaleIn 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer-badge {
+  background: linear-gradient(
+    90deg,
+    rgba(217, 154, 81, 0.1) 0%,
+    rgba(217, 154, 81, 0.3) 50%,
+    rgba(217, 154, 81, 0.1) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 4s infinite linear;
+}
+
+/* Premium Card Hover Lift */
+.card-hover-lift {
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 200ms ease;
+}
+
+.card-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -6px rgba(36, 76, 59, 0.08), 0 4px 8px -2px rgba(36, 76, 59, 0.04);
+}
+
+/* Digital Dining Pass Ticket Notch Elements */
+.ticket-notch-l {
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #000000;
+  opacity: 0.6;
+}
+
+.ticket-notch-r {
+  position: absolute;
+  right: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #000000;
+  opacity: 0.6;
+}
+
+.ticket-divider-dash {
+  border-top: 2px dashed #E5E1D8;
+}
+
 .modal-backdrop {
   animation: modalBackdropFadeIn 180ms ease-out forwards;
 }

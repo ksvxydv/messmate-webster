@@ -56,7 +56,7 @@ export default function KitchenMetricCards({
       {cards.map((kpi) => {
         const Icon = kpi.icon;
         return (
-          <div key={kpi.label} className={`p-5 rounded-2xl border ${kpi.bg} space-y-1.5 shadow-2xs`}>
+          <div key={kpi.label} className={`p-5 rounded-2xl border ${kpi.bg} space-y-1.5 shadow-2xs card-hover-lift`}>
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-[#777064]">
                 {kpi.label}

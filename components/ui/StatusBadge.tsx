@@ -34,7 +34,7 @@ const STATUS_CONFIG: Record<
   },
   CONSUMED: {
     label: "Redeemed (Eaten)",
-    style: "bg-purple-50 text-purple-900 border-purple-200 font-bold",
+    style: "bg-[#244C3B]/10 text-[#244C3B] border-[#244C3B]/25 font-bold",
     icon: BadgeCheck,
   },
   MISSED: {

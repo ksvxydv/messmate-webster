@@ -52,7 +52,7 @@ export default function RebateCard({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className={`${THEME.subCard} space-y-1.5 p-5`}>
+        <div className={`${THEME.subCard} space-y-1.5 p-5 card-hover-lift`}>
           <span className="text-xs text-[#777064] font-bold uppercase tracking-wider block">
             Base Monthly Mess Advance
           </span>
@@ -62,7 +62,7 @@ export default function RebateCard({
           <p className="text-xs text-[#777064]">Standard institutional monthly fee</p>
         </div>
 
-        <div className="bg-[#FFFBEB] rounded-xl border border-[#FDE68A] p-5 space-y-1.5">
+        <div className="bg-[#FFFBEB] rounded-xl border border-[#FDE68A] p-5 space-y-1.5 card-hover-lift">
           <span className="text-xs text-[#92400E] font-bold uppercase tracking-wider block">
             Verified Pre-Cutoff Credits
           </span>
@@ -74,7 +74,7 @@ export default function RebateCard({
           </p>
         </div>
 
-        <div className="bg-[#F0FDF4] rounded-xl border border-[#BBF7D0] p-5 space-y-1.5">
+        <div className="bg-[#F0FDF4] rounded-xl border border-[#BBF7D0] p-5 space-y-1.5 card-hover-lift">
           <span className="text-xs text-[#166534] font-bold uppercase tracking-wider block">
             Adjusted Net Payable
           </span>

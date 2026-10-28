@@ -40,7 +40,7 @@ export default function DevTestingSuite({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Daily Meal Seeder Tool */}
-        <div className="bg-white rounded-xl border border-[#E5E1D8] p-5 space-y-3 shadow-2xs">
+        <div className="bg-white rounded-xl border border-[#E5E1D8] p-5 space-y-3 shadow-2xs card-hover-lift">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h4 className="text-sm font-bold text-[#252820] flex items-center gap-2">
@@ -54,7 +54,7 @@ export default function DevTestingSuite({
               type="button"
               onClick={onSeedToday}
               disabled={seeding}
-              className="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#244C3B] hover:bg-[#1B3A2D] text-white transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shrink-0 shadow-xs"
+              className="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#244C3B] hover:bg-[#1B3A2D] active:scale-[0.97] text-white transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shrink-0 shadow-xs"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${seeding ? "animate-spin" : ""}`} />
               {seeding ? "Seeding..." : "Seed Today"}
@@ -62,7 +62,7 @@ export default function DevTestingSuite({
           </div>
           {seedStatus && (
             <div
-              className={`p-3 rounded-xl border text-xs flex items-center gap-2.5 ${
+              className={`p-3 rounded-xl border text-xs flex items-center gap-2.5 animate-scale-in ${
                 seedStatus.seeded
                   ? "bg-emerald-50 border-emerald-200 text-emerald-800"
                   : "bg-rose-50 border-rose-200 text-rose-800"
@@ -87,7 +87,7 @@ export default function DevTestingSuite({
         </div>
 
         {/* 10-Cashier Concurrent Stress Test */}
-        <div className="bg-white rounded-xl border border-[#E5E1D8] p-5 space-y-3 shadow-2xs">
+        <div className="bg-white rounded-xl border border-[#E5E1D8] p-5 space-y-3 shadow-2xs card-hover-lift">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h4 className="text-sm font-bold text-[#252820] flex items-center gap-2">
@@ -101,7 +101,7 @@ export default function DevTestingSuite({
               type="button"
               onClick={onRunConcurrencyTest}
               disabled={testRunning}
-              className="px-3.5 py-2 bg-[#244C3B] hover:bg-[#1B3A2D] text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0 shadow-xs"
+              className="px-3.5 py-2 bg-[#244C3B] hover:bg-[#1B3A2D] active:scale-[0.97] text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0 shadow-xs"
             >
               <Zap className={`w-3.5 h-3.5 ${testRunning ? "animate-spin" : ""}`} />
               {testRunning ? "Firing..." : "Run Test"}
@@ -109,7 +109,7 @@ export default function DevTestingSuite({
           </div>
 
           {testSummary && (
-            <div className="space-y-2 pt-1">
+            <div className="space-y-2 pt-1 animate-scale-in">
               <div className="p-2.5 bg-[#FAF7F0] rounded-lg border border-[#E5E1D8] flex flex-wrap items-center justify-between gap-2 text-xs">
                 <span>
                   Redeemed: <strong className="text-[#15803D] font-mono">{testSummary.success}</strong> (Target: 1)

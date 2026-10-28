@@ -48,7 +48,7 @@ export default function Navbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`whitespace-nowrap px-2.5 lg:px-3 py-1.5 rounded-xl text-xs lg:text-sm font-semibold flex items-center gap-1.5 lg:gap-2 transition-all duration-150 ${
+                className={`whitespace-nowrap px-2.5 lg:px-3 py-1.5 rounded-xl text-xs lg:text-sm font-semibold flex items-center gap-1.5 lg:gap-2 transition-all duration-150 active:scale-[0.98] ${
                   isActive
                     ? "bg-[#244C3B] text-white shadow-xs"
                     : "text-[#252820]/75 hover:bg-[#FAF7F0] hover:text-[#252820]"

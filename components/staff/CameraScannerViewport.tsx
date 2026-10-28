@@ -38,10 +38,18 @@ export default function CameraScannerViewport({
         {/* Live Video Element managed by Html5Qrcode */}
         <div
           id="reader"
-          className={`w-full max-w-[320px] aspect-square mx-auto ${
+          className={`w-full max-w-[320px] aspect-square mx-auto relative ${
             cameraState === "RUNNING" ? "block" : "hidden"
           }`}
-        />
+        >
+          {/* Viewfinder Target Corner Brackets */}
+          <div className="absolute inset-4 pointer-events-none z-10">
+            <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-[#244C3B] rounded-tl-lg" />
+            <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-[#244C3B] rounded-tr-lg" />
+            <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-[#244C3B] rounded-bl-lg" />
+            <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-[#244C3B] rounded-br-lg" />
+          </div>
+        </div>
 
         {/* Scanning beam active during live video */}
         {cameraState === "RUNNING" && <div className="scanner-beam" />}

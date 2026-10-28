@@ -71,9 +71,9 @@ export default function MealCard({
 
   return (
     <div
-      className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-xs ${
+      className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-xs card-hover-lift ${
         timing.isServingNow
-          ? "bg-white border-[#244C3B] ring-2 ring-[#244C3B]/10"
+          ? "bg-white border-[#244C3B] ring-2 ring-[#244C3B]/10 shadow-md shadow-[#244C3B]/5"
           : `${THEME.card}`
       }`}
     >
@@ -140,11 +140,11 @@ export default function MealCard({
 
           {/* Dishes List or Fallback Empty State */}
           {isConfigured && dishes.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
+            <div key={`${meal.id}-${activePref}`} className="flex flex-wrap gap-2 animate-fade-in-up">
               {dishes.map((dish, i) => (
                 <span
                   key={i}
-                  className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold border flex items-center gap-1.5 shadow-2xs ${timing.theme.tagStyle}`}
+                  className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold border flex items-center gap-1.5 shadow-2xs hover:border-[#244C3B]/40 transition-colors ${timing.theme.tagStyle}`}
                 >
                   <Utensils className="w-3.5 h-3.5 text-[#244C3B]" />
                   <span>{dish}</span>

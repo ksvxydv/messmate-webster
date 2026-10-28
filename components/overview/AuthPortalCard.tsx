@@ -147,12 +147,12 @@ export default function AuthPortalCard() {
               value={emailInput}
               onChange={(e) => setEmailInput(e.target.value)}
               placeholder="e.g. 20253137@mnnit.ac.in or warden@mnnit.ac.in"
-              className="w-full bg-[#FAF7F0] border border-[#E5E1D8] rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#252820] placeholder-[#777064] focus:outline-none focus:border-[#244C3B] transition-colors"
+              className="w-full bg-[#FAF7F0] border border-[#E5E1D8] rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#252820] placeholder-[#777064] focus:outline-none focus:border-[#244C3B] focus:ring-2 focus:ring-[#244C3B]/15 transition-all"
             />
           </div>
 
           {loginError && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs sm:text-sm text-rose-800 flex items-center gap-2">
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs sm:text-sm text-rose-800 flex items-center gap-2 animate-scale-in">
               <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
               <span>{loginError}</span>
             </div>
@@ -161,7 +161,7 @@ export default function AuthPortalCard() {
           <button
             type="submit"
             disabled={isLoggingIn || !emailInput.trim()}
-            className="w-full py-2.5 sm:py-3 bg-[#244C3B] hover:bg-[#1B3A2D] text-white font-black text-xs sm:text-sm rounded-xl shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+            className="w-full py-2.5 sm:py-3 bg-[#244C3B] hover:bg-[#1B3A2D] text-white font-black text-xs sm:text-sm rounded-xl shadow-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
           >
             <LogIn className="w-4 h-4" />
             {isLoggingIn ? "Signing in..." : "Continue to Dashboard"}
@@ -177,21 +177,21 @@ export default function AuthPortalCard() {
               <button
                 type="button"
                 onClick={() => handleQuickPersona("STUDENT")}
-                className="px-3 py-1.5 bg-[#FAF7F0] hover:bg-[#F0ECE1] text-[#252820] text-xs font-bold rounded-lg border border-[#E5E1D8] transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="px-3 py-1.5 bg-[#FAF7F0] hover:bg-[#F0ECE1] active:scale-[0.97] text-[#252820] text-xs font-bold rounded-lg border border-[#E5E1D8] transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <CalendarDays className="w-3.5 h-3.5 text-[#244C3B]" /> Student
               </button>
               <button
                 type="button"
                 onClick={() => handleQuickPersona("STAFF")}
-                className="px-3 py-1.5 bg-[#FAF7F0] hover:bg-[#F0ECE1] text-[#252820] text-xs font-bold rounded-lg border border-[#E5E1D8] transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="px-3 py-1.5 bg-[#FAF7F0] hover:bg-[#F0ECE1] active:scale-[0.97] text-[#252820] text-xs font-bold rounded-lg border border-[#E5E1D8] transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <ScanLine className="w-3.5 h-3.5 text-emerald-700" /> Staff
               </button>
               <button
                 type="button"
                 onClick={() => handleQuickPersona("ADMIN")}
-                className="px-3 py-1.5 bg-[#FAF7F0] hover:bg-[#F0ECE1] text-[#252820] text-xs font-bold rounded-lg border border-[#E5E1D8] transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="px-3 py-1.5 bg-[#FAF7F0] hover:bg-[#F0ECE1] active:scale-[0.97] text-[#252820] text-xs font-bold rounded-lg border border-[#E5E1D8] transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <ChartNoAxesCombined className="w-3.5 h-3.5 text-[#D99A51]" /> Admin
               </button>
@@ -210,7 +210,7 @@ export default function AuthPortalCard() {
               value={regName}
               onChange={(e) => setRegName(e.target.value)}
               placeholder="e.g. Aditya Verma"
-              className="w-full bg-[#FAF7F0] border border-[#E5E1D8] rounded-xl px-3.5 py-2 text-xs sm:text-sm text-[#252820] placeholder-[#777064] focus:outline-none focus:border-[#244C3B]"
+              className="w-full bg-[#FAF7F0] border border-[#E5E1D8] rounded-xl px-3.5 py-2 text-xs sm:text-sm text-[#252820] placeholder-[#777064] focus:outline-none focus:border-[#244C3B] focus:ring-2 focus:ring-[#244C3B]/15 transition-all"
             />
           </div>
 
@@ -223,7 +223,7 @@ export default function AuthPortalCard() {
               value={regNo}
               onChange={(e) => setRegNo(e.target.value)}
               placeholder="e.g. 20251004"
-              className="w-full bg-[#FAF7F0] border border-[#E5E1D8] rounded-xl px-3.5 py-2 text-xs sm:text-sm text-[#252820] placeholder-[#777064] focus:outline-none focus:border-[#244C3B] font-mono"
+              className="w-full bg-[#FAF7F0] border border-[#E5E1D8] rounded-xl px-3.5 py-2 text-xs sm:text-sm text-[#252820] placeholder-[#777064] focus:outline-none focus:border-[#244C3B] focus:ring-2 focus:ring-[#244C3B]/15 transition-all font-mono"
             />
           </div>
 
@@ -241,7 +241,7 @@ export default function AuthPortalCard() {
               value={regEmail}
               onChange={(e) => setRegEmail(e.target.value)}
               placeholder="e.g. 20251004@mnnit.ac.in"
-              className="w-full bg-[#FAF7F0] border border-[#E5E1D8] rounded-xl px-3.5 py-2 text-xs sm:text-sm text-[#252820] placeholder-[#777064] focus:outline-none focus:border-[#244C3B]"
+              className="w-full bg-[#FAF7F0] border border-[#E5E1D8] rounded-xl px-3.5 py-2 text-xs sm:text-sm text-[#252820] placeholder-[#777064] focus:outline-none focus:border-[#244C3B] focus:ring-2 focus:ring-[#244C3B]/15 transition-all"
             />
           </div>
 
@@ -255,10 +255,10 @@ export default function AuthPortalCard() {
                   key={pref}
                   type="button"
                   onClick={() => setRegDiet(pref)}
-                  className={`py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                  className={`py-2 text-xs font-bold rounded-lg border transition-all active:scale-[0.98] cursor-pointer ${
                     regDiet === pref
-                      ? "bg-[#244C3B] text-white border-[#244C3B]"
-                      : "bg-[#FAF7F0] text-[#777064] border-[#E5E1D8] hover:text-[#252820]"
+                      ? "bg-[#244C3B] text-white border-[#244C3B] shadow-2xs"
+                      : "bg-[#FAF7F0] text-[#777064] border-[#E5E1D8] hover:text-[#252820] hover:bg-white"
                   }`}
                 >
                   {pref === "NON_VEG" ? "NON-VEG" : pref}
@@ -268,14 +268,14 @@ export default function AuthPortalCard() {
           </div>
 
           {regError && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs sm:text-sm text-rose-800 flex items-center gap-2">
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs sm:text-sm text-rose-800 flex items-center gap-2 animate-scale-in">
               <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
               <span>{regError}</span>
             </div>
           )}
 
           {regSuccess && (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs sm:text-sm text-emerald-800 flex items-center gap-2">
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs sm:text-sm text-emerald-800 flex items-center gap-2 animate-scale-in">
               <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
               <span>{regSuccess}</span>
             </div>
@@ -284,7 +284,7 @@ export default function AuthPortalCard() {
           <button
             type="submit"
             disabled={isRegistering}
-            className="w-full py-2.5 sm:py-3 bg-[#244C3B] hover:bg-[#1B3A2D] text-white font-black text-xs sm:text-sm rounded-xl shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+            className="w-full py-2.5 sm:py-3 bg-[#244C3B] hover:bg-[#1B3A2D] text-white font-black text-xs sm:text-sm rounded-xl shadow-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
           >
             {isRegistering ? "Enrolling Student..." : "Register & Enter Dining Portal"}
             <ArrowRight className="w-4 h-4 ml-1" />

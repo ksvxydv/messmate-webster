@@ -7,17 +7,17 @@ export const THEME = {
   container: "max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6",
 
   // Card styles: Crisp white surfaces on warm ivory backdrop with subtle stone borders
-  card: "bg-white rounded-2xl border border-[#E5E1D8] shadow-sm shadow-[#244C3B]/5 hover:border-[#D99A51]/50 transition-all duration-200",
+  card: "bg-white rounded-2xl border border-[#E5E1D8] shadow-xs hover:border-[#244C3B]/30 hover:shadow-md hover:shadow-[#244C3B]/5 transition-all duration-200",
   cardHeader: "p-5 sm:p-6 border-b border-[#E5E1D8] flex flex-wrap items-center justify-between gap-3",
   cardBody: "p-5 sm:p-6",
-  subCard: "bg-[#FAF7F0] rounded-xl border border-[#E5E1D8] p-4 hover:border-[#D99A51]/40 transition-colors",
+  subCard: "bg-[#FAF7F0] rounded-xl border border-[#E5E1D8] p-4 hover:border-[#244C3B]/25 transition-all duration-150",
 
   // Button styles: Deep green primary, warm ivory secondary, saffron accent
-  btnPrimary: "px-4 py-2.5 bg-[#244C3B] hover:bg-[#1B3A2D] active:scale-[0.98] text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
-  btnSecondary: "px-4 py-2.5 bg-white hover:bg-[#FAF7F0] active:scale-[0.98] text-[#252820] font-bold text-xs sm:text-sm rounded-xl border border-[#E5E1D8] shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50",
-  btnDanger: "px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-800 font-bold text-xs sm:text-sm rounded-xl border border-rose-200 active:scale-[0.98] transition-all cursor-pointer",
-  btnSuccess: "px-4 py-2.5 bg-[#244C3B] hover:bg-[#1B3A2D] active:scale-[0.98] text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50",
-  btnSaffron: "px-4 py-2.5 bg-[#D99A51] hover:bg-[#C5863D] active:scale-[0.98] text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer",
+  btnPrimary: "px-4 py-2.5 bg-[#244C3B] hover:bg-[#1B3A2D] active:scale-[0.97] text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs hover:shadow-sm transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+  btnSecondary: "px-4 py-2.5 bg-white hover:bg-[#FAF7F0] active:scale-[0.97] text-[#252820] font-bold text-xs sm:text-sm rounded-xl border border-[#E5E1D8] shadow-xs hover:border-[#244C3B]/30 transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50",
+  btnDanger: "px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-800 font-bold text-xs sm:text-sm rounded-xl border border-rose-200 active:scale-[0.97] transition-all duration-150 cursor-pointer",
+  btnSuccess: "px-4 py-2.5 bg-[#244C3B] hover:bg-[#1B3A2D] active:scale-[0.97] text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50",
+  btnSaffron: "px-4 py-2.5 bg-[#D99A51] hover:bg-[#C5863D] active:scale-[0.97] text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer",
 
   // Role theme colors
   roles: {
