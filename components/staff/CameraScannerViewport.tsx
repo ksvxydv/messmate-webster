@@ -122,14 +122,14 @@ export default function CameraScannerViewport({
       <div className="flex items-center justify-between text-xs text-[#777064] px-1">
         <span className="flex items-center gap-1.5 font-medium">
           <ScanLine className="w-3.5 h-3.5 text-[#244C3B]" />
-          Align student&apos;s 30s rotating QR dining pass within camera view.
+          Align student&apos;s meal QR pass within camera view.
         </span>
         <button
           type="button"
           onClick={onToggleManualInput}
           className="text-[#244C3B] font-bold hover:underline cursor-pointer"
         >
-          {showManualInput ? "Hide Token Input" : "Token Input"}
+          {showManualInput ? "Hide Code Input" : "Manual Code Input"}
         </button>
       </div>
 

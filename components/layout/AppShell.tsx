@@ -43,26 +43,26 @@ export default function AppShell({
         )}
         {children}
 
-        {/* Refined Institutional Footer */}
+        {/* Institutional Footer */}
         <footer className="pt-8 pb-12 mt-12 border-t border-[#E5E1D8]/80 text-xs text-[#777064] space-y-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="font-semibold text-[#252820]">MessMate Operational System</span>
+              <span className="font-semibold text-[#252820]">MessMate Dining Management System</span>
               <span className="text-[#E5E1D8]">|</span>
-              <span>Webster 2026 • CodeSangam</span>
+              <span>Hostel Mess Operations</span>
             </div>
             <div className="flex items-center gap-4 text-xs font-medium">
               <span>MNNIT Allahabad</span>
               <span>•</span>
-              <span>HMAC-SHA256 QR Passes</span>
+              <span>Central Dining Hall</span>
               <span>•</span>
-              <span>Atomic CAS Ledger</span>
+              <span>Prayagraj, India</span>
             </div>
           </div>
           <div className="text-center sm:text-left text-[11px] text-[#777064]/80 flex flex-col sm:flex-row justify-between items-center gap-2">
-            <p>Predictive Hostel Mess Resource Management &amp; Cryptographic Attendance Verification.</p>
-            <p className="font-mono">Track: E2 — The Kamar-Taj Refectory</p>
+            <p>Motilal Nehru National Institute of Technology Allahabad • Student Hostel Mess Management</p>
+            <p>© {new Date().getFullYear()} MessMate</p>
           </div>
         </footer>
       </div>

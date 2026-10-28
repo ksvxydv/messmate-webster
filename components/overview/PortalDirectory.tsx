@@ -6,10 +6,6 @@ import {
   CalendarDays,
   ScanLine,
   ChartNoAxesCombined,
-  Clock3,
-  QrCode,
-  ShieldCheck,
-  WifiOff,
   ArrowRight,
   ChefHat,
 } from "lucide-react";
@@ -22,47 +18,24 @@ export default function PortalDirectory() {
       role: "STUDENT",
       href: "/student",
       icon: CalendarDays,
-      desc: "Manage daily meal attendance, opt out before preparation deadlines for automated fee rebates, and access rotating 30s QR passes during dining hours.",
-      features: ["Deadline Countdown Timers", "Active Meal QR Passes", "Automated Monthly Rebates"],
+      desc: "View daily meal schedules, manage attendance before preparation cutoffs, review monthly fee rebates, and access your meal pass.",
+      features: ["Daily Meal Schedules", "Meal Opt-In & Opt-Out", "Monthly Rebate Statement"],
     },
     {
       title: "Staff Entry Scanner",
       role: "STAFF",
       href: "/staff",
       icon: ScanLine,
-      desc: "High-speed camera check-in terminal for dining hall staff. Enforces atomic Compare-and-Swap single-use validation and queues scans when Wi-Fi drops.",
-      features: ["Sub-50ms Verification", "Anti-Double-Scan Protection", "Offline Queue & Auto-Sync"],
+      desc: "Dining hall entry terminal for mess staff to check in residents and verify valid meal passes during serving hours.",
+      features: ["Dining Hall Check-In", "Pass Verification", "Real-Time Entry Logging"],
     },
     {
-      title: "Kitchen Admin & Analytics",
+      title: "Kitchen Admin & Operations",
       role: "ADMIN",
       href: "/admin",
       icon: ChartNoAxesCombined,
-      desc: "Real-time kitchen head-count forecasts, dietary breakdown, food waste telemetry, surplus redistribution alerts, and CSV audit ledger exports.",
-      features: ["Kitchen Prep Headcounts", "Verified Consumption Tracking", "Surplus Redistribution"],
-    },
-  ];
-
-  const pillars = [
-    {
-      icon: Clock3,
-      title: "Preparation Deadlines",
-      desc: "Cutoff times lock attendance before cooking begins, giving the kitchen exact portion numbers to eliminate food waste.",
-    },
-    {
-      icon: QrCode,
-      title: "Scheduled QR Access",
-      desc: "Meal entry passes activate strictly during dining serving hours with rotating cryptographic signatures.",
-    },
-    {
-      icon: ShieldCheck,
-      title: "Single-Use Verification",
-      desc: "Atomic database locking guarantees each meal pass can only be redeemed once.",
-    },
-    {
-      icon: WifiOff,
-      title: "Offline Continuity",
-      desc: "Staff terminals verify and queue entries locally even if campus Wi-Fi drops during rush hour.",
+      desc: "Comprehensive mess management console for menu planning, portion forecasting, attendance records, and audit reports.",
+      features: ["Daily Headcount Forecasts", "Dietary Quota Overview", "Attendance Ledger & Reports"],
     },
   ];
 
@@ -118,20 +91,6 @@ export default function PortalDirectory() {
             );
           })}
         </div>
-      </div>
-
-      {/* Key Dining Pillars */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
-        {pillars.map((item) => {
-          const Icon = item.icon;
-          return (
-            <div key={item.title} className={`${THEME.subCard} p-4 sm:p-5 space-y-2`}>
-              <Icon className="w-5 h-5 text-[#244C3B]" />
-              <h4 className="text-sm font-bold text-[#252820]">{item.title}</h4>
-              <p className="text-xs text-[#777064] leading-relaxed font-medium">{item.desc}</p>
-            </div>
-          );
-        })}
       </div>
     </div>
   );

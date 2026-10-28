@@ -151,13 +151,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loginWithCredentials = useCallback(
-    async (email: string, password?: string) => {
+    async (identifier: string, password?: string) => {
       try {
-        const cleanEmail = email.trim().toLowerCase();
+        const cleanId = identifier.trim().toLowerCase();
         const res = await fetch("/api/auth/session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: cleanEmail, password }),
+          body: JSON.stringify({ loginId: cleanId, email: cleanId, password }),
         });
 
         const data = await res.json();
@@ -251,7 +251,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    try {
+      await fetch("/api/auth/session", { method: "DELETE" });
+    } catch {}
     setCurrentUser(null);
     setToken(null);
     setRole("STUDENT");

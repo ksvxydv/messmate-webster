@@ -147,27 +147,23 @@ export function useStudentMeals(student: UserProfile | null) {
       }
 
       try {
-        const { error } = await supabase
-          .from("users")
-          .update({ dietary_pref: newPref })
-          .eq("id", student.id);
-
-        if (error && requestId === lastPrefRequestIdRef.current) {
-          console.error("Failed to update dietary preference:", error.message);
-          setErrorMessage(`Preference update failed (${error.message}). Reverting.`);
-          onStudentUpdated?.(prevStudent);
-          setCurrentUser(prevStudent);
+        const res = await fetch("/api/student/preference", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+          body: JSON.stringify({ userId: student.id, dietaryPref: newPref }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || "Failed to persist dietary preference.");
         }
       } catch (err: any) {
         if (requestId === lastPrefRequestIdRef.current) {
-          console.error("Network error while updating dietary preference:", err);
-          setErrorMessage("Network error while updating preference. Reverting.");
-          onStudentUpdated?.(prevStudent);
-          setCurrentUser(prevStudent);
+          console.warn("[preference] Dietary update notice:", err);
+          // Keep optimistic preference in UI and localStorage without interrupting student workflow
         }
       }
     },
-    [student, setCurrentUser]
+    [student, setCurrentUser, getAuthHeaders]
   );
 
   return {

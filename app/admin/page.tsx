@@ -13,7 +13,7 @@ import DevTestingSuite from "@/components/admin/DevTestingSuite";
 import { RefreshCw, Download } from "lucide-react";
 
 export default function AdminDashboard() {
-  const { role, loading: authLoading } = useAuth();
+  const { role, loading: authLoading, currentUser } = useAuth();
 
   const {
     slots,
@@ -44,7 +44,7 @@ export default function AdminDashboard() {
     );
   }
 
-  if (role !== "ADMIN") {
+  if (!currentUser || role !== "ADMIN") {
     return <RoleGuard requiredRole="ADMIN" />;
   }
 

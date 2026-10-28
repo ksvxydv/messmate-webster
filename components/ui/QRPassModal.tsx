@@ -111,26 +111,26 @@ export default function QRPassModal({
             )}
           </div>
 
-          {/* 30-Second Rotation Progress */}
+          {/* Dynamic Pass Status */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-xs text-[#777064]">
               <span className="flex items-center gap-1 font-semibold text-[#252820]">
-                <Clock3 className="w-3.5 h-3.5 text-[#D99A51] stroke-[2.2]" /> Rotating Signature
+                <Clock3 className="w-3.5 h-3.5 text-[#244C3B] stroke-[2.2]" /> Active Pass
               </span>
-              <span className="font-mono font-bold text-[#D99A51] bg-[#D99A51]/10 px-2 py-0.5 rounded-md">
-                {qrCountdown}s
+              <span className="font-mono text-xs text-[#777064] bg-[#FAF7F0] px-2 py-0.5 rounded-md border border-[#E5E1D8]">
+                Auto-refreshes
               </span>
             </div>
-            <div className="w-full bg-[#FAF7F0] h-2 rounded-full overflow-hidden border border-[#E5E1D8]">
+            <div className="w-full bg-[#FAF7F0] h-1.5 rounded-full overflow-hidden border border-[#E5E1D8]">
               <div
-                className="bg-gradient-to-r from-[#244C3B] to-[#D99A51] h-full transition-all duration-1000 ease-linear rounded-full"
+                className="bg-[#244C3B] h-full transition-all duration-1000 ease-linear rounded-full"
                 style={{ width: `${100 - countdownPercent}%` }}
               />
             </div>
           </div>
 
           <div className="text-[11px] text-[#777064] bg-[#FAF7F0] p-2.5 rounded-xl border border-[#E5E1D8] text-center leading-relaxed">
-            <span className="text-[#244C3B] font-bold">HMAC-SHA256 Protected:</span> Token expires automatically on window bucket change to prevent screenshot replay.
+            Present this QR pass at the dining hall cashier counter for meal check-in.
           </div>
         </div>
       </div>

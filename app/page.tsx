@@ -1,11 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import AppShell from "@/components/layout/AppShell";
 import LiveMenuPreview from "@/components/overview/LiveMenuPreview";
-import AuthPortalCard from "@/components/overview/AuthPortalCard";
 import PortalDirectory from "@/components/overview/PortalDirectory";
-import { UtensilsCrossed } from "lucide-react";
+import {
+  UtensilsCrossed,
+  LogIn,
+  UserPlus,
+  Clock,
+  Coins,
+  ShieldCheck,
+  Building2,
+} from "lucide-react";
 
 export default function HomePage() {
   const [todayMeals, setTodayMeals] = useState<any[]>([]);
@@ -24,52 +32,85 @@ export default function HomePage() {
   return (
     <AppShell>
       {/* Hero Dining Banner */}
-      <section className="text-center space-y-2.5 pt-1 pb-1 max-w-2xl mx-auto">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#244C3B]/10 text-[#244C3B] text-xs font-bold border border-[#244C3B]/20 shadow-2xs">
+      <section className="text-center space-y-4 pt-2 pb-4 max-w-3xl mx-auto">
+        <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#244C3B]/10 text-[#244C3B] text-xs font-bold border border-[#244C3B]/20 shadow-2xs">
           <UtensilsCrossed className="w-3.5 h-3.5 text-[#D99A51]" />
-          <span>MNNIT Central Dining Facility • Hostel Mess System</span>
+          <span>MNNIT Allahabad • Central Dining Facility &amp; Hostel Mess</span>
         </div>
 
-        <h1 className="text-2xl sm:text-3xl lg:text-[38px] font-black text-[#252820] tracking-tight leading-snug max-w-xl mx-auto">
-          Hostel Mess Management &amp; Dining Platform
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#252820] tracking-tight leading-tight">
+          Hostel Mess Management &amp; Dining System
         </h1>
 
-        <p className="text-xs sm:text-sm text-[#777064] leading-relaxed max-w-lg mx-auto font-medium">
-          Centralized meal scheduling, automated opt-out rebates, and secure dining hall entry for MNNIT Allahabad.
+        <p className="text-xs sm:text-sm text-[#777064] leading-relaxed max-w-xl mx-auto font-medium">
+          Daily meal schedules, automated opt-out fee rebates, and digital dining hall passes for resident students, mess staff, and wardens.
         </p>
 
-        {/* Real-time System Badges */}
-        <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-xs text-[#777064] font-medium">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#E5E1D8] shadow-2xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span>30s Rotating HMAC Passes</span>
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#E5E1D8] shadow-2xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#244C3B]" />
-            <span>Server Cutoff State Engine</span>
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#E5E1D8] shadow-2xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#D99A51]" />
-            <span>Offline IndexedDB PWA Sync</span>
-          </span>
+        {/* Clear Call-To-Action Actions */}
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+          <Link
+            href="/login"
+            className="px-5 py-2.5 bg-[#244C3B] hover:bg-[#1B3A2D] text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer active:scale-[0.98]"
+          >
+            <LogIn className="w-4 h-4" />
+            <span>Sign In to Portal</span>
+          </Link>
+          <Link
+            href="/register"
+            className="px-5 py-2.5 bg-white hover:bg-[#FAF7F0] text-[#244C3B] text-xs sm:text-sm font-bold rounded-xl border border-[#244C3B]/30 shadow-2xs transition-all flex items-center gap-2 cursor-pointer active:scale-[0.98]"
+          >
+            <UserPlus className="w-4 h-4 text-[#244C3B]" />
+            <span>Register as Student</span>
+          </Link>
         </div>
       </section>
 
-      {/* Main Grid: Today's Menu Highlight + Sign In / Register Card */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* Left Side: Today's Live Mess Menu Card */}
-        <div className="lg:col-span-7">
-          <LiveMenuPreview todayMeals={todayMeals} />
-        </div>
+      {/* Prominent Daily Menu Highlight */}
+      <section className="space-y-4 max-w-4xl mx-auto">
+        <LiveMenuPreview todayMeals={todayMeals} />
+      </section>
 
-        {/* Right Side: Authentication & Student Registration Card */}
-        <div className="lg:col-span-5">
-          <AuthPortalCard />
-        </div>
-      </div>
+      {/* Public Dining Information & Guidelines */}
+      <section className="max-w-4xl mx-auto pt-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E5E1D8] shadow-2xs space-y-2">
+            <div className="w-9 h-9 rounded-xl bg-[#244C3B]/10 text-[#244C3B] flex items-center justify-center font-bold">
+              <Clock className="w-4 h-4" />
+            </div>
+            <h3 className="text-sm font-bold text-[#252820]">Serving Hours</h3>
+            <p className="text-xs text-[#777064] leading-relaxed">
+              Breakfast: 7:30 AM – 10:30 AM<br />
+              Lunch: 12:00 PM – 2:30 PM<br />
+              Dinner: 7:30 PM – 10:00 PM
+            </p>
+          </div>
 
-      {/* Campus Dining Portals & Architectural Pillars */}
-      <PortalDirectory />
+          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E5E1D8] shadow-2xs space-y-2">
+            <div className="w-9 h-9 rounded-xl bg-[#D99A51]/15 text-[#9E651E] flex items-center justify-center font-bold">
+              <Coins className="w-4 h-4" />
+            </div>
+            <h3 className="text-sm font-bold text-[#252820]">Automated Fee Rebates</h3>
+            <p className="text-xs text-[#777064] leading-relaxed">
+              Opting out before preparation cutoffs credits ₹40 (Breakfast), ₹80 (Lunch), or ₹60 (Dinner) directly to your monthly fee ledger.
+            </p>
+          </div>
+
+          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E5E1D8] shadow-2xs space-y-2">
+            <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            <h3 className="text-sm font-bold text-[#252820]">Dining Entry Verification</h3>
+            <p className="text-xs text-[#777064] leading-relaxed">
+              Students present their active dining pass at the cashier counter during serving hours for instant entry check-in.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Campus Dining Portals Directory */}
+      <section className="max-w-4xl mx-auto">
+        <PortalDirectory />
+      </section>
     </AppShell>
   );
 }

@@ -7,25 +7,51 @@ import {
   CalendarDays,
   ScanLine,
   ChartNoAxesCombined,
-  Check,
   LogOut,
   LogIn,
-  User,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import Logo from "@/components/ui/Logo";
-import DevTimeController from "@/components/ui/DevTimeController";
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { role, setRole, currentUser, logout, isDemoEnabled } = useAuth();
+  const { currentUser, logout } = useAuth();
 
+  // Role-appropriate navigation links
   const navItems = [
     { name: "Overview", shortName: "Overview", href: "/", icon: LayoutDashboard },
-    { name: "Student Dining", shortName: "Dining", href: "/student", icon: CalendarDays },
-    { name: "Staff Scanner", shortName: "Scanner", href: "/staff", icon: ScanLine },
-    { name: "Kitchen Admin", shortName: "Admin", href: "/admin", icon: ChartNoAxesCombined },
   ];
+
+  if (currentUser?.role === "STUDENT") {
+    navItems.push({
+      name: "Student Dining",
+      shortName: "Dining",
+      href: "/student",
+      icon: CalendarDays,
+    });
+  } else if (currentUser?.role === "STAFF") {
+    navItems.push({
+      name: "Staff Scanner",
+      shortName: "Scanner",
+      href: "/staff",
+      icon: ScanLine,
+    });
+  } else if (currentUser?.role === "ADMIN") {
+    navItems.push(
+      {
+        name: "Kitchen Admin",
+        shortName: "Admin",
+        href: "/admin",
+        icon: ChartNoAxesCombined,
+      },
+      {
+        name: "Staff Scanner",
+        shortName: "Scanner",
+        href: "/staff",
+        icon: ScanLine,
+      }
+    );
+  }
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#E5E1D8] font-sans shadow-xs">
@@ -65,54 +91,20 @@ export default function Navbar() {
           })}
         </nav>
 
-        {/* Right Section: User Session & Optional Development Controls */}
+        {/* Right Section: User Session & Logout */}
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-          {/* Development-Only Time Controller */}
-          {isDemoEnabled && <DevTimeController />}
-
-          {/* Development-Only Role Switcher */}
-          {isDemoEnabled && (
-            <div
-              className="hidden lg:flex items-center bg-[#FAF7F0] p-1 rounded-xl border border-[#E5E1D8]"
-              role="group"
-              aria-label="Development Demo Persona Switcher"
-            >
-              <span className="text-[10px] text-[#777064] px-1.5 font-bold uppercase tracking-wider">
-                Dev:
-              </span>
-              {(["STUDENT", "STAFF", "ADMIN"] as const).map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setRole(r)}
-                  aria-pressed={role === r}
-                  title={`Switch development role to ${r}`}
-                  className={`px-2 py-0.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                    role === r
-                      ? "bg-[#244C3B] text-white shadow-xs"
-                      : "text-[#777064] hover:text-[#252820] hover:bg-white"
-                  }`}
-                >
-                  {role === r && <Check className="w-3 h-3 stroke-[2.5]" />}
-                  <span>{r === "STUDENT" ? "Student" : r === "STAFF" ? "Staff" : "Admin"}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Real Authenticated User State */}
           {currentUser ? (
-            <div className="flex items-center gap-2">
-              <div className="hidden sm:flex flex-col text-right leading-tight">
-                <span className="text-xs font-bold text-[#252820] truncate max-w-[120px]">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex flex-col text-right leading-tight">
+                <span className="text-xs font-bold text-[#252820] truncate max-w-[140px]">
                   {currentUser.name}
                 </span>
                 <span className="text-[10px] text-[#777064] uppercase font-bold tracking-wider">
                   {currentUser.role === "STUDENT"
-                    ? "Resident"
+                    ? "Resident Student"
                     : currentUser.role === "STAFF"
-                    ? "Staff"
-                    : "Warden"}
+                    ? "Mess Staff"
+                    : "Chief Warden"}
                 </span>
               </div>
               <button
@@ -126,38 +118,48 @@ export default function Navbar() {
               </button>
             </div>
           ) : (
-            <Link
-              href="/login"
-              className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#244C3B] hover:bg-[#1B3A2D] text-white shadow-xs transition-all flex items-center gap-1.5"
-            >
-              <LogIn className="w-3.5 h-3.5" />
-              <span>Sign In</span>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/register"
+                className="hidden sm:inline-flex px-3 py-1.5 rounded-xl text-xs font-semibold text-[#244C3B] hover:bg-[#FAF7F0] border border-[#244C3B]/20 transition-all"
+              >
+                Register
+              </Link>
+              <Link
+                href="/login"
+                className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#244C3B] hover:bg-[#1B3A2D] text-white shadow-xs transition-all flex items-center gap-1.5"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Sign In</span>
+              </Link>
+            </div>
           )}
         </div>
       </div>
 
       {/* Mobile Sub-Navigation Bar (below md breakpoint) */}
-      <div className="md:hidden border-t border-[#E5E1D8] bg-[#FAF7F0]/95 px-3 py-1.5 flex items-center justify-around">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all min-h-[38px] ${
-                isActive
-                  ? "bg-[#244C3B] text-white shadow-xs"
-                  : "text-[#777064] hover:text-[#252820] hover:bg-white"
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5 stroke-[2]" />
-              <span>{item.shortName}</span>
-            </Link>
-          );
-        })}
-      </div>
+      {navItems.length > 1 && (
+        <div className="md:hidden border-t border-[#E5E1D8] bg-[#FAF7F0]/95 px-3 py-1.5 flex items-center justify-around">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all min-h-[38px] ${
+                  isActive
+                    ? "bg-[#244C3B] text-white shadow-xs"
+                    : "text-[#777064] hover:text-[#252820] hover:bg-white"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5 stroke-[2]" />
+                <span>{item.shortName}</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </header>
   );
 }

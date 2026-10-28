@@ -8,11 +8,11 @@ function getHmacSecret(): string {
   const secret = process.env.HMAC_SECRET;
   if (!secret) {
     if (process.env.NODE_ENV === "production") {
-      console.warn(
-        "[WARN] HMAC_SECRET environment variable is missing. Using secure fallback secret. Set HMAC_SECRET in your production environment settings."
+      throw new Error(
+        "FATAL SECURITY CONFIGURATION: HMAC_SECRET environment variable is missing. Set HMAC_SECRET in your production environment settings."
       );
     }
-    return "802509398f8df0607a7e1479fa4865b5995a28cbfe1022ae71c97068cb392742";
+    return "dev_secret_only_for_local_development_0123456789abcdef";
   }
   return secret;
 }

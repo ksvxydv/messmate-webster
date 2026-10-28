@@ -11,24 +11,22 @@ import RoleGuard from "@/components/ui/RoleGuard";
 import RebateCard from "@/components/ui/RebateCard";
 import QRPassModal from "@/components/ui/QRPassModal";
 import StudentHeader from "@/components/student/StudentHeader";
-import StudentPersonaSwitcher from "@/components/student/StudentPersonaSwitcher";
 import MealCard from "@/components/student/MealCard";
 import { UtensilsCrossed, AlertCircle, RefreshCw, ChefHat } from "lucide-react";
 import { UserProfile, DietaryPref } from "@/types";
 
 export default function StudentDashboard() {
-  const { role, loading: authLoading, currentUser, setCurrentUser, availableUsers } = useAuth();
+  const { role, loading: authLoading, currentUser } = useAuth();
   const [student, setStudent] = useState<UserProfile | null>(null);
 
-  // Keep active student aligned with currentUser
+  // Keep active student strictly aligned with verified authenticated user
   useEffect(() => {
     if (currentUser?.role === "STUDENT") {
       setStudent(currentUser);
     } else {
-      const firstStudent = availableUsers.find((u) => u.role === "STUDENT");
-      if (firstStudent) setStudent(firstStudent);
+      setStudent(null);
     }
-  }, [currentUser, availableUsers]);
+  }, [currentUser]);
 
   const {
     meals,
@@ -45,11 +43,6 @@ export default function StudentDashboard() {
     handleDietaryChange,
   } = useStudentMeals(student);
 
-  const studentProfiles = useMemo(
-    () => availableUsers.filter((u) => u.role === "STUDENT"),
-    [availableUsers],
-  );
-
   if (authLoading || (loading && !student)) {
     return (
       <div className="p-16 text-center text-[#777064] font-medium text-sm">
@@ -58,7 +51,7 @@ export default function StudentDashboard() {
     );
   }
 
-  if (role !== "STUDENT") {
+  if (role !== "STUDENT" || !currentUser) {
     return <RoleGuard requiredRole="STUDENT" />;
   }
 
@@ -118,21 +111,6 @@ export default function StudentDashboard() {
           <div className="text-xs text-[#777064]">Credited to monthly fee statement</div>
         </div>
       </div>
-
-      {/* Student Profile Switcher (Demo Only) */}
-      <StudentPersonaSwitcher
-        studentProfiles={studentProfiles}
-        activeStudentId={student?.id}
-        onSelectStudent={(s) => {
-          const savedPref = typeof window !== "undefined"
-            ? (localStorage.getItem(`messmate_pref_${s.id}`) as DietaryPref | null)
-            : null;
-          const targetStudent = savedPref ? { ...s, dietary_pref: savedPref } : s;
-          setStudent(targetStudent);
-          setCurrentUser(targetStudent);
-          setErrorMessage(null);
-        }}
-      />
 
       {/* Error Alert */}
       {errorMessage && (

@@ -37,6 +37,21 @@ export async function POST(request: Request) {
       );
     }
 
+    // Prevent privilege impersonation or claiming staff/admin identities
+    if (
+      cleanEmail.startsWith("staff") ||
+      cleanEmail.startsWith("warden") ||
+      cleanEmail.startsWith("admin")
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Administrative and staff accounts cannot be registered publicly. Please contact hostel administration.",
+        },
+        { status: 403 }
+      );
+    }
+
     if (!password || typeof password !== "string" || password.length < 8) {
       return NextResponse.json(
         { success: false, error: "Password must be at least 8 characters long." },
@@ -89,8 +104,6 @@ export async function POST(request: Request) {
           email: cleanEmail,
           role: "STUDENT",
           dietary_pref: validPref,
-          password_hash: passwordHash,
-          password_salt: passwordSalt,
         })
         .select()
         .single();
@@ -103,29 +116,18 @@ export async function POST(request: Request) {
       console.warn("[register] Supabase unreachable, persisting to local store:", e);
     }
 
-    // 5. Fallback: If Supabase wasn't available, persist to local store
-    if (!newUser) {
-      newUser = localStore.registerUser({
-        name: name.trim(),
-        regNo: regNo.trim().toUpperCase(),
-        email: cleanEmail,
-        dietaryPref: validPref as any,
-        role: "STUDENT",
-        passwordHash,
-        passwordSalt,
-      });
-    } else {
-      // Also sync to local store for fast offline lookups
-      localStore.registerUser({
-        name: newUser.name,
-        regNo: newUser.reg_no,
-        email: newUser.email,
-        dietaryPref: newUser.dietary_pref,
-        role: newUser.role,
-        passwordHash,
-        passwordSalt,
-      });
-    }
+    // 5. Authoritatively persist to local store (with cryptographic password hash & salt)
+    const localUser = localStore.registerUser({
+      id: newUser?.id, // uses Supabase generated UUID if available, or crypto.randomUUID()
+      name: name.trim(),
+      regNo: regNo.trim().toUpperCase(),
+      email: cleanEmail,
+      dietaryPref: validPref as any,
+      role: "STUDENT",
+      passwordHash,
+      passwordSalt,
+    });
+    newUser = newUser ? { ...newUser, ...localUser } : localUser;
 
     // 6. Seed today's bookings for the newly enrolled student
     const serverNow = getServerNow();

@@ -12,7 +12,7 @@ import CameraScannerViewport from "@/components/staff/CameraScannerViewport";
 import ScanResultCard from "@/components/staff/ScanResultCard";
 
 export default function StaffScanner() {
-  const { role, loading: authLoading, getAuthHeaders } = useAuth();
+  const { role, loading: authLoading, getAuthHeaders, currentUser } = useAuth();
   const [scanResult, setScanResult] = useState<any>(null);
   const [scanStatus, setScanStatus] = useState<"IDLE" | "SUCCESS" | "ERROR">("IDLE");
   const [message, setMessage] = useState("Ready to scan student meal QR pass...");
@@ -147,15 +147,15 @@ export default function StaffScanner() {
     );
   }
 
-  if (role !== "STAFF" && role !== "ADMIN") {
+  if (!currentUser || (role !== "STAFF" && role !== "ADMIN")) {
     return <RoleGuard requiredRole="STAFF" />;
   }
 
   return (
     <AppShell
       badge="Dining Check-In"
-      title="Staff QR Entry Scanner"
-      description="Cashier validation terminal, offline queue sync & single-use attendance ledger"
+      title="Staff Meal Entry Scanner"
+      description="Dining hall entry terminal for resident check-in and meal pass verification"
       actions={
         <NetworkHeaderActions
           currentNetworkState={currentNetworkState}

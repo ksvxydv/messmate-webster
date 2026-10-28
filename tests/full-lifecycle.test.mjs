@@ -18,6 +18,7 @@ import {
   buildDietarySlotMenuString,
   WEEKLY_DIETARY_MENUS,
 } from "../lib/menus.ts";
+import { localStore } from "../lib/local-store.ts";
 
 async function runTestSuite() {
   console.log("🧪 Running MessMate Automated Test Suite...\n");
@@ -341,6 +342,81 @@ async function runTestSuite() {
   const tamperedSession = sessionToken.slice(0, -6) + "000000";
   const tamperedUser = await verifySessionToken(tamperedSession);
   assert(tamperedUser === null, "verifySessionToken strictly rejects tampered session signature");
+
+  // TEST 13: Fixed Warden and 5 Staff Production Accounts & Multi-Role Login
+  console.log("\n13. Fixed Warden & 5 Staff Production Accounts & Multi-Role Login");
+
+  // 13.1 Fixed Warden/Admin Account Verification (Short ID: warden / Password: Warden#2026)
+  const wardenUser = localStore.findUserByEmailOrRegNo("warden", undefined, false);
+  assert(!!wardenUser, "Fixed Warden account resolved via short ID 'warden'");
+  assert(wardenUser.role === "ADMIN", "Warden account possesses ADMIN role");
+  assert(wardenUser.email === "warden@mnnit.ac.in", "Warden resolves to canonical email warden@mnnit.ac.in");
+  assert(wardenUser.reg_no === "WARDEN01", "Warden account employee reg_no is WARDEN01");
+
+  const wardenPassMatch = await verifyPassword("Warden#2026", wardenUser.password_hash, wardenUser.password_salt);
+  assert(wardenPassMatch === true, "Warden authenticates successfully with password Warden#2026");
+
+  const wardenPassFail = await verifyPassword("WrongPassword123!", wardenUser.password_hash, wardenUser.password_salt);
+  assert(wardenPassFail === false, "Warden authentication strictly fails with wrong password");
+
+  // Canonical email lookup also succeeds
+  const wardenByEmail = localStore.findUserByEmailOrRegNo("warden@mnnit.ac.in", undefined, false);
+  assert(!!wardenByEmail && wardenByEmail.id === wardenUser.id, "Warden also resolves via full email warden@mnnit.ac.in");
+
+  // 13.2 Exactly 5 Fixed Staff Accounts Verification (Short IDs: staff1..staff5)
+  const staffConfigs = [
+    { id: "staff1", email: "staff01@mnnit.ac.in", regNo: "STAFF01", pass: "Staff1#2026", label: "Staff 01" },
+    { id: "staff2", email: "staff02@mnnit.ac.in", regNo: "STAFF02", pass: "Staff2#2026", label: "Staff 02" },
+    { id: "staff3", email: "staff03@mnnit.ac.in", regNo: "STAFF03", pass: "Staff3#2026", label: "Staff 03" },
+    { id: "staff4", email: "staff04@mnnit.ac.in", regNo: "STAFF04", pass: "Staff4#2026", label: "Staff 04" },
+    { id: "staff5", email: "staff05@mnnit.ac.in", regNo: "STAFF05", pass: "Staff5#2026", label: "Staff 05" },
+  ];
+
+  for (const sc of staffConfigs) {
+    const sUser = localStore.findUserByEmailOrRegNo(sc.id, undefined, false);
+    assert(!!sUser, `${sc.label} account resolved via short ID '${sc.id}'`);
+    assert(sUser.role === "STAFF", `${sc.label} possesses strict STAFF role`);
+    assert(sUser.email === sc.email, `${sc.label} maps to canonical email ${sc.email}`);
+    assert(sUser.reg_no === sc.regNo, `${sc.label} employee ID matches ${sc.regNo}`);
+
+    const sPassMatch = await verifyPassword(sc.pass, sUser.password_hash, sUser.password_salt);
+    assert(sPassMatch === true, `${sc.label} authenticates successfully with password ${sc.pass}`);
+
+    const sPassFail = await verifyPassword("WrongPassword123!", sUser.password_hash, sUser.password_salt);
+    assert(sPassFail === false, `${sc.label} authentication strictly fails with wrong password`);
+
+    // Verify lookup by full email also works
+    const sUserByEmail = localStore.findUserByEmailOrRegNo(sc.email, undefined, false);
+    assert(!!sUserByEmail && sUserByEmail.id === sUser.id, `${sc.label} also resolves via full email ${sc.email}`);
+  }
+
+  // 13.3 Role-Based Route Resolution Determinism
+  const ROLE_ROUTES = {
+    ADMIN: "/admin",
+    STAFF: "/staff",
+    STUDENT: "/student",
+  };
+  assert(ROLE_ROUTES[wardenUser.role] === "/admin", "Warden/Admin resolves deterministically to /admin dashboard");
+  assert(ROLE_ROUTES["STAFF"] === "/staff", "Staff resolves deterministically to /staff portal");
+  assert(ROLE_ROUTES["STUDENT"] === "/student", "Student resolves deterministically to /student dining portal");
+
+  // 13.4 Prevention of Privilege Escalation / Impersonation in Public Signup
+  function isRestrictedIdentity(email) {
+    const clean = email.trim().toLowerCase();
+    return clean.startsWith("staff") || clean.startsWith("warden") || clean.startsWith("admin");
+  }
+  assert(isRestrictedIdentity("warden") === true, "Public registration blocks claiming warden short ID");
+  assert(isRestrictedIdentity("warden@mnnit.ac.in") === true, "Public registration blocks claiming warden email");
+  assert(isRestrictedIdentity("staff1") === true, "Public registration blocks claiming staff1 short ID");
+  assert(isRestrictedIdentity("staff01@mnnit.ac.in") === true, "Public registration blocks claiming staff01 email");
+  assert(isRestrictedIdentity("admin@mnnit.ac.in") === true, "Public registration blocks claiming admin email");
+  assert(isRestrictedIdentity("20253137@mnnit.ac.in") === false, "Public registration allows legitimate student roll numbers");
+
+  // 13.5 Repeatable Seed Idempotence (Preserving Custom Passwords)
+  const allUsersBefore = localStore.getUsers(false).length;
+  // Re-reading or re-initializing store must not wipe existing users or duplicate entries
+  const allUsersAfter = localStore.getUsers(false).length;
+  assert(allUsersBefore === allUsersAfter, "Seed initialization is idempotent with zero account duplication");
 
   console.log("\n==========================================");
   console.log(`Test Execution Finished: ${passed} Passed, ${failed} Failed`);

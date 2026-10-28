@@ -10,18 +10,14 @@ import {
   AlertCircle,
   CheckCircle2,
   ArrowRight,
-  CalendarDays,
-  ScanLine,
-  ChartNoAxesCombined,
   Eye,
   EyeOff,
-  Lock,
 } from "lucide-react";
 import { DietaryPref } from "@/types";
 
 export default function AuthPortalCard() {
   const router = useRouter();
-  const { loginWithCredentials, registerStudent, loginAsRole, isDemoEnabled } = useAuth();
+  const { loginWithCredentials, registerStudent } = useAuth();
 
   const [activeTab, setActiveTab] = useState<"SIGN_IN" | "REGISTER">("SIGN_IN");
 
@@ -113,14 +109,6 @@ export default function AuthPortalCard() {
       setTimeout(() => setActiveTab("SIGN_IN"), 2000);
     } else {
       setRegError(res.error || "Registration enrollment failed.");
-    }
-  };
-
-  const handleQuickPersona = async (targetRole: "STUDENT" | "STAFF" | "ADMIN") => {
-    const user = await loginAsRole(targetRole);
-    if (user) {
-      const routes = { STUDENT: "/student", STAFF: "/staff", ADMIN: "/admin" };
-      router.push(routes[targetRole]);
     }
   };
 
@@ -216,38 +204,6 @@ export default function AuthPortalCard() {
             {isLoggingIn ? "Signing in..." : "Continue to Dashboard"}
             <ArrowRight className="w-4 h-4 ml-1" />
           </button>
-
-          {/* Quick Persona Access for Testing (Dev Mode Only) */}
-          {isDemoEnabled && (
-            <div className="pt-3 border-t border-[#E5E1D8] space-y-2">
-              <p className="text-xs text-[#777064] font-bold text-center">
-                Evaluation Quick Login (Dev Mode):
-              </p>
-              <div className="flex flex-wrap justify-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleQuickPersona("STUDENT")}
-                  className="px-3 py-1.5 bg-[#FAF7F0] hover:bg-[#F0ECE1] active:scale-[0.97] text-[#252820] text-xs font-bold rounded-lg border border-[#E5E1D8] transition-all flex items-center gap-1.5 cursor-pointer"
-                >
-                  <CalendarDays className="w-3.5 h-3.5 text-[#244C3B]" /> Student
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickPersona("STAFF")}
-                  className="px-3 py-1.5 bg-[#FAF7F0] hover:bg-[#F0ECE1] active:scale-[0.97] text-[#252820] text-xs font-bold rounded-lg border border-[#E5E1D8] transition-all flex items-center gap-1.5 cursor-pointer"
-                >
-                  <ScanLine className="w-3.5 h-3.5 text-emerald-700" /> Staff
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickPersona("ADMIN")}
-                  className="px-3 py-1.5 bg-[#FAF7F0] hover:bg-[#F0ECE1] active:scale-[0.97] text-[#252820] text-xs font-bold rounded-lg border border-[#E5E1D8] transition-all flex items-center gap-1.5 cursor-pointer"
-                >
-                  <ChartNoAxesCombined className="w-3.5 h-3.5 text-[#D99A51]" /> Admin
-                </button>
-              </div>
-            </div>
-          )}
         </form>
       )}
 
