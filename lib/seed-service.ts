@@ -1,5 +1,6 @@
 import { supabase } from "./supabase.ts";
 import { buildDietarySlotMenuString } from "./menus.ts";
+import { DEMO_USERS } from "../config/constants.ts";
 
 export const DAILY_MENUS: Record<number, { breakfast: string; lunch: string; dinner: string }> = {
   0: { breakfast: "Poha, Jalebi & Masala Chai",         lunch: "Chole Chawal, Raita & Roti",             dinner: "Paneer Butter Masala, Dal Tadka & Rice" },
@@ -103,10 +104,21 @@ export async function ensureTodayMealSlots(serverNow: Date) {
 
   // 3. Ensure all students have bookings for today's slots
   if (activeSlots.length > 0) {
-    const { data: students } = await supabase
+    let { data: students } = await supabase
       .from("users")
       .select("id")
       .eq("role", "STUDENT");
+
+    if (!students || students.length === 0) {
+      // Auto-populate demo users if connected Supabase table is empty
+      const { data: seededUsers } = await supabase
+        .from("users")
+        .upsert(DEMO_USERS, { onConflict: "id" })
+        .select("id, role");
+      if (seededUsers && seededUsers.length > 0) {
+        students = seededUsers.filter((u: any) => u.role === "STUDENT");
+      }
+    }
 
     if (students && students.length > 0) {
       const bookingsToInsert = activeSlots.flatMap((slot) =>

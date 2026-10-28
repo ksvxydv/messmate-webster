@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   ChefHat,
   Coffee,
@@ -14,7 +14,7 @@ import {
   Wheat,
 } from "lucide-react";
 import { THEME } from "@/lib/theme";
-import { resolveDietaryDishes } from "@/lib/menus";
+import { resolveDietaryDishes, WEEKLY_DIETARY_MENUS } from "@/lib/menus";
 import { DietaryPref } from "@/types";
 
 interface LiveMenuPreviewProps {
@@ -23,6 +23,33 @@ interface LiveMenuPreviewProps {
 
 export default function LiveMenuPreview({ todayMeals }: LiveMenuPreviewProps) {
   const [activePref, setActivePref] = useState<DietaryPref>("VEG");
+
+  const fallbackMeals = useMemo(() => {
+    const dow = new Date().getDay();
+    const schedule = WEEKLY_DIETARY_MENUS[dow] || WEEKLY_DIETARY_MENUS[1];
+    return [
+      {
+        id: "preview-breakfast",
+        meal_type: "BREAKFAST",
+        unit_cost: 40,
+        dietary_variants: schedule.BREAKFAST,
+      },
+      {
+        id: "preview-lunch",
+        meal_type: "LUNCH",
+        unit_cost: 80,
+        dietary_variants: schedule.LUNCH,
+      },
+      {
+        id: "preview-dinner",
+        meal_type: "DINNER",
+        unit_cost: 60,
+        dietary_variants: schedule.DINNER,
+      },
+    ];
+  }, []);
+
+  const displayMeals = todayMeals.length > 0 ? todayMeals : fallbackMeals;
 
   return (
     <div className={`${THEME.card} p-5 sm:p-6 space-y-4 shadow-xs`}>
@@ -64,8 +91,7 @@ export default function LiveMenuPreview({ todayMeals }: LiveMenuPreviewProps) {
 
       {/* Meal Items Preview */}
       <div className="space-y-3">
-        {todayMeals.length > 0 ? (
-          todayMeals.map((meal) => {
+        {displayMeals.map((meal) => {
             const MealIcon =
               meal.meal_type === "BREAKFAST"
                 ? Coffee
@@ -128,13 +154,7 @@ export default function LiveMenuPreview({ todayMeals }: LiveMenuPreviewProps) {
                 </div>
               </div>
             );
-          })
-        ) : (
-          <div className="p-8 text-center text-sm text-[#777064] space-y-2">
-            <UtensilsCrossed className="w-6 h-6 text-[#777064] mx-auto" />
-            <p>Daily meal schedule active. Sign in to view options.</p>
-          </div>
-        )}
+          })}
       </div>
 
       {/* Footer Info */}
