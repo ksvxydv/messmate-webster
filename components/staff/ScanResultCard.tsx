@@ -120,14 +120,24 @@ export default function ScanResultCard({
         )}
       </div>
 
-      {/* Security Architecture Footnote */}
-      <div className="bg-white rounded-xl p-3.5 border border-[#E5E1D8] text-xs sm:text-sm text-[#777064] flex items-center justify-between shadow-2xs">
-        <div className="flex items-center gap-2">
-          <Clock3 className="w-4 h-4 text-[#244C3B]" />
-          <span className="font-semibold">Single-Statement Atomic CAS Check</span>
+      {/* Security Architecture Guard */}
+      <div className="bg-white rounded-2xl p-3.5 border border-[#E5E1D8] text-xs sm:text-sm text-[#777064] flex items-center justify-between shadow-2xs">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-xl bg-[#244C3B]/10 text-[#244C3B] flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-4 h-4 stroke-[2.2]" />
+          </div>
+          <div>
+            <span className="font-bold text-[#252820] text-xs block">
+              Atomic Check-In Protection
+            </span>
+            <span className="text-[11px] text-[#777064]">
+              Real-time concurrency lock prevents duplicate passes
+            </span>
+          </div>
         </div>
-        <span className="text-[11px] sm:text-xs text-[#244C3B] font-mono font-bold">
-          WHERE status IN (&apos;LOCKED&apos;, &apos;OPTED_IN&apos;)
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-bold">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          Anti-Duplicate Guard
         </span>
       </div>
     </div>
